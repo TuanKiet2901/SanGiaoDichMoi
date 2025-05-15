@@ -5,13 +5,12 @@ from flask import current_app
 
 class Chatbot:
     def __init__(self):
-        openai.api_key = os.getenv('OPENAI_API_KEY')
+        self.client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
         print("DEBUG - OPENAI_API_KEY:", os.getenv('OPENAI_API_KEY'))
         self.conversation_history = []
 
     def get_response(self, user_message):
         try:
-            # Nếu người dùng hỏi về sản phẩm
             if "sản phẩm" in user_message.lower():
                 with current_app.app_context():
                     products = Product.query.all()
@@ -23,13 +22,13 @@ class Chatbot:
                 prompt = user_message
 
             self.conversation_history.append({"role": "user", "content": prompt})
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=self.conversation_history,
                 max_tokens=150,
                 temperature=0.7
             )
-            bot_response = response.choices[0].message['content']
+            bot_response = response.choices[0].message.content
             self.conversation_history.append({"role": "assistant", "content": bot_response})
             return bot_response
         except Exception as e:
@@ -38,14 +37,3 @@ class Chatbot:
 
     def clear_history(self):
         self.conversation_history = []
-
-    def test_openai(self):
-        try:
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": "1+1 bằng mấy?"}],
-                max_tokens=10
-            )
-            print("Test OpenAI:", response.choices[0].message['content'])
-        except Exception as e:
-            print("Test OpenAI error:", e)
