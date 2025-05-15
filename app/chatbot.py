@@ -6,6 +6,7 @@ from flask import current_app
 class Chatbot:
     def __init__(self):
         openai.api_key = os.getenv('OPENAI_API_KEY')
+        print("DEBUG - OPENAI_API_KEY:", os.getenv('OPENAI_API_KEY'))
         self.conversation_history = []
 
     def get_response(self, user_message):
