@@ -38,3 +38,14 @@ class Chatbot:
 
     def clear_history(self):
         self.conversation_history = []
+
+    def test_openai(self):
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": "1+1 bằng mấy?"}],
+                max_tokens=10
+            )
+            print("Test OpenAI:", response.choices[0].message['content'])
+        except Exception as e:
+            print("Test OpenAI error:", e)
