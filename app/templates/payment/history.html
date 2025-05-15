@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Agri TraceChain{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-green-700">Lịch sử thanh toán</h1>
+        
+        <div class="flex space-x-4">
+            <button id="filter-button" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition duration-200 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                </svg>
+                Lọc
+            </button>
+        </div>
+    </div>
+    
+    <!-- Filter panel -->
+    <div id="filter-panel" class="bg-gray-100 p-4 rounded-lg mb-6 hidden">
+        <form method="GET" action="{{ url_for('payment.payment_history') }}" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label for="status" class="block text-gray-700 font-medium mb-2">Trạng thái</label>
+                <select id="status" name="status" 
+                        class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="pending" {% if status == 'pending' %}selected{% endif %}>Đang xử lý</option>
+                    <option value="completed" {% if status == 'completed' %}selected{% endif %}>Hoàn thành</option>
+                    <option value="failed" {% if status == 'failed' %}selected{% endif %}>Thất bại</option>
+                    <option value="refunded" {% if status == 'refunded' %}selected{% endif %}>Hoàn tiền</option>
+                </select>
+            </div>
+            
+            <div class="flex items-end">
+                <button type="submit" class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200">
+                    Áp dụng
+                </button>
+                <a href="{{ url_for('payment.payment_history') }}" class="ml-2 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition duration-200">
+                    Đặt lại
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Payments list -->
+    {% if payments %}
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Mã giao dịch
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Đơn hàng
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Số tiền
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Phương thức
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Trạng thái
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Ngày thanh toán
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for payment in payments %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ payment.transaction_id }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="{{ url_for('marketplace.order_detail', id=payment.order_id) }}" class="text-blue-600 hover:text-blue-900">
+                            #{{ payment.order_id }}
+                        </a>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">{{ "{:,.0f}".format(payment.amount) }} đ</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">
+                            {% if payment.payment_method == 'cod' %}
+                                Thanh toán khi nhận hàng
+                            {% elif payment.payment_method == 'bank_transfer' %}
+                                Chuyển khoản ngân hàng
+                            {% elif payment.payment_method == 'e_wallet' %}
+                                Ví điện tử
+                            {% else %}
+                                {{ payment.payment_method }}
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            {% if payment.status == 'completed' %}bg-green-100 text-green-800
+                            {% elif payment.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% elif payment.status == 'failed' %}bg-red-100 text-red-800
+                            {% elif payment.status == 'refunded' %}bg-blue-100 text-blue-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {% if payment.status == 'completed' %}Hoàn thành
+                            {% elif payment.status == 'pending' %}Đang xử lý
+                            {% elif payment.status == 'failed' %}Thất bại
+                            {% elif payment.status == 'refunded' %}Hoàn tiền
+                            {% else %}{{ payment.status }}{% endif %}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">{{ payment.created_at.strftime('%d/%m/%Y %H:%M') }}</div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="mt-8 flex justify-center">
+        <nav class="inline-flex rounded-md shadow">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('payment.payment_history', page=pagination.prev_num, status=status) }}" 
+               class="px-3 py-2 rounded-l-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                Trước
+            </a>
+            {% else %}
+            <span class="px-3 py-2 rounded-l-md border border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed">
+                Trước
+            </span>
+            {% endif %}
+            
+            {% for page in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page %}
+                    {% if page == pagination.page %}
+                    <span class="px-3 py-2 border border-gray-300 bg-green-600 text-white">
+                        {{ page }}
+                    </span>
+                    {% else %}
+                    <a href="{{ url_for('payment.payment_history', page=page, status=status) }}" 
+                       class="px-3 py-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                        {{ page }}
+                    </a>
+                    {% endif %}
+                {% else %}
+                <span class="px-3 py-2 border border-gray-300 bg-white text-gray-700">
+                    ...
+                </span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <a href="{{ url_for('payment.payment_history', page=pagination.next_num, status=status) }}" 
+               class="px-3 py-2 rounded-r-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                Tiếp
+            </a>
+            {% else %}
+            <span class="px-3 py-2 rounded-r-md border border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed">
+                Tiếp
+            </span>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="bg-white p-8 rounded-lg shadow-md text-center">
+        <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h2 class="text-xl font-bold text-gray-700 mb-2">Không tìm thấy giao dịch nào</h2>
+        <p class="text-gray-600 mb-4">Không có giao dịch thanh toán nào phù hợp với tiêu chí tìm kiếm của bạn.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterButton = document.getElementById('filter-button');
+        const filterPanel = document.getElementById('filter-panel');
+        
+        if (filterButton && filterPanel) {
+            filterButton.addEventListener('click', function() {
+                filterPanel.classList.toggle('hidden');
+            });
+        }
+        
+        // Show filter panel if any filter is applied
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('status')) {
+            filterPanel.classList.remove('hidden');
+        }
+    });
+</script>
+{% endblock %}

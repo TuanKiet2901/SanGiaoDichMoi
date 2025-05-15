@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Đơn hàng của tôi (Người bán) - Agri TraceChain{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold text-green-700 mb-6">Đơn hàng liên quan đến sản phẩm của bạn</h1>
+    {% if orders %}
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã đơn hàng</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người mua</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày đặt</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng tiền</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for order in orders %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap font-bold">#{{ order.id }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ order.buyer_id }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ order.order_date.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+                            {% if order.status == 'delivered' %}bg-green-100 text-green-800
+                            {% elif order.status == 'pending' %}bg-yellow-100 text-yellow-800
+                            {% elif order.status == 'confirmed' %}bg-blue-100 text-blue-800
+                            {% elif order.status == 'shipped' %}bg-purple-100 text-purple-800
+                            {% elif order.status == 'cancelled' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {% if order.status == 'delivered' %}Đã giao hàng
+                            {% elif order.status == 'pending' %}Chờ xác nhận
+                            {% elif order.status == 'confirmed' %}Đã xác nhận
+                            {% elif order.status == 'shipped' %}Đang giao hàng
+                            {% elif order.status == 'cancelled' %}Đã hủy
+                            {% else %}{{ order.status }}{% endif %}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ "{:,.0f}".format(order.total_price) }} đ</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right">
+                        <a href="{{ url_for('marketplace.order_detail', id=order.id) }}" class="text-blue-600 hover:text-blue-900">Chi tiết</a>
+                        {% if order.status == 'pending' %}
+                        <button class="ml-2 bg-green-600 text-white px-3 py-1 rounded confirm-order-btn" data-order-id="{{ order.id }}">Xác nhận</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="bg-white p-8 rounded-lg shadow-md text-center">
+        <h2 class="text-xl font-bold text-gray-700 mb-2">Không có đơn hàng nào liên quan đến sản phẩm của bạn.</h2>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gắn sự kiện xác nhận đơn hàng cho farmer
+        const confirmBtns = document.querySelectorAll('.confirm-order-btn');
+        confirmBtns.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const orderId = this.getAttribute('data-order-id');
+                if (confirm('Bạn có chắc chắn muốn xác nhận đơn hàng này?')) {
+                    fetch(`/marketplace/orders/${orderId}/update-status`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ status: 'confirmed' })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            window.location.reload();
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        alert('Có lỗi xảy ra khi xác nhận đơn hàng.');
+                    });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %} 

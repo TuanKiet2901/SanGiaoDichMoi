@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Agri TraceChain{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold text-green-700 mb-6">Thanh toán</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-lg font-bold text-gray-800 mb-4">Thông tin giao hàng</h2>
+
+                <form method="POST" action="{{ url_for('marketplace.checkout') }}" id="checkout-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="shipping_name" class="block text-gray-700 font-medium mb-2">Họ tên người nhận <span class="text-red-500">*</span></label>
+                            <input type="text" id="shipping_name" name="shipping_name" required
+                                   value="{{ user.name }}"
+                                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+
+                        <div>
+                            <label for="shipping_phone" class="block text-gray-700 font-medium mb-2">Số điện thoại <span class="text-red-500">*</span></label>
+                            <input type="tel" id="shipping_phone" name="shipping_phone" required
+                                   value="{{ user.phone }}"
+                                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="shipping_address" class="block text-gray-700 font-medium mb-2">Địa chỉ giao hàng <span class="text-red-500">*</span></label>
+                        <textarea id="shipping_address" name="shipping_address" required rows="3"
+                                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">{{ user.address }}</textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="notes" class="block text-gray-700 font-medium mb-2">Ghi chú</label>
+                        <textarea id="notes" name="notes" rows="2"
+                                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                  placeholder="Ghi chú về đơn hàng, ví dụ: thời gian hay chỉ dẫn địa điểm giao hàng chi tiết hơn."></textarea>
+                    </div>
+
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 mt-8">Phương thức thanh toán</h2>
+
+                    <div class="space-y-4 mb-6">
+                        <div class="border rounded-lg p-4 flex items-start">
+                            <input type="radio" id="payment_cod" name="payment_method" value="cod" checked
+                                   class="mt-1 mr-3">
+                            <div>
+                                <label for="payment_cod" class="font-medium text-gray-800 block mb-1">Thanh toán khi nhận hàng (COD)</label>
+                                <p class="text-sm text-gray-600">Bạn chỉ phải thanh toán khi nhận được hàng</p>
+                            </div>
+                        </div>
+
+                        <div class="border rounded-lg p-4 flex items-start">
+                            <input type="radio" id="payment_bank" name="payment_method" value="bank_transfer"
+                                   class="mt-1 mr-3">
+                            <div>
+                                <label for="payment_bank" class="font-medium text-gray-800 block mb-1">Chuyển khoản ngân hàng</label>
+                                <p class="text-sm text-gray-600">Thực hiện thanh toán vào tài khoản ngân hàng. Đơn hàng sẽ được giao sau khi tiền đã được chuyển.</p>
+                                <div class="mt-2 p-3 bg-gray-50 rounded text-sm">
+                                    <p class="font-medium">Thông tin tài khoản:</p>
+                                    <p>Ngân hàng: Vietcombank</p>
+                                    <p>Số tài khoản: 1234567890</p>
+                                    <p>Chủ tài khoản: CÔNG TY NÔNG SẢN SẠCH</p>
+                                    <p>Nội dung: Thanh toán đơn hàng #[Mã đơn hàng]</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border rounded-lg p-4 flex items-start">
+                            <input type="radio" id="payment_ewallet" name="payment_method" value="e_wallet"
+                                   class="mt-1 mr-3">
+                            <div>
+                                <label for="payment_ewallet" class="font-medium text-gray-800 block mb-1">Ví điện tử</label>
+                                <p class="text-sm text-gray-600">Thanh toán qua ví điện tử (MoMo, ZaloPay, VNPay)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition duration-200">
+                        Đặt hàng
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div>
+            <div class="bg-white rounded-lg shadow-md p-6 sticky top-6">
+                <h2 class="text-lg font-bold text-gray-800 mb-4">Đơn hàng của bạn</h2>
+
+                <div class="border-b pb-4 mb-4">
+                    {% for item in cart_items %}
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-start">
+                            <div class="h-10 w-10 bg-gray-200 rounded-lg overflow-hidden mr-3 flex-shrink-0">
+                                {% if item.product.image_url %}
+                                <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}" class="h-full w-full object-cover">
+                                {% else %}
+                                <div class="h-full w-full flex items-center justify-center text-gray-400">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">{{ item.product.name }}</div>
+                                <div class="text-xs text-gray-500">{{ item.quantity }} x {{ "{:,.0f}".format(item.unit_price) }} đ</div>
+                            </div>
+                        </div>
+                        <div class="text-sm font-medium text-gray-900">{{ "{:,.0f}".format(item.subtotal) }} đ</div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="border-b pb-4 mb-4">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">Tạm tính</span>
+                        <span class="font-medium">{{ "{:,.0f}".format(cart.total_amount) }} đ</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Phí vận chuyển</span>
+                        <span class="font-medium">Miễn phí</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-between mb-6">
+                    <span class="text-lg font-bold">Tổng cộng</span>
+                    <span class="text-lg font-bold text-green-600">{{ "{:,.0f}".format(cart.total_amount) }} đ</span>
+                </div>
+
+                <div class="text-sm text-gray-600 mb-4">
+                    Bằng cách đặt hàng, bạn đồng ý với <a href="#" class="text-blue-600 hover:underline">điều khoản dịch vụ</a> và <a href="#" class="text-blue-600 hover:underline">chính sách bảo mật</a> của chúng tôi.
+                </div>
+
+                <a href="{{ url_for('marketplace.cart') }}" class="block w-full text-center mt-4 text-green-600 hover:underline">
+                    Quay lại giỏ hàng
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkoutForm = document.getElementById('checkout-form');
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden';
+        loadingOverlay.innerHTML = '<div class="bg-white p-5 rounded-lg shadow-lg"><div class="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600 mx-auto"></div><p class="mt-3 text-center">Đang xử lý thanh toán...</p></div>';
+        document.body.appendChild(loadingOverlay);
+
+        function showLoading() {
+            loadingOverlay.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        function showAlert(message, type = 'error') {
+            // Sử dụng hàm showAlert từ main.js nếu có
+            if (typeof window.showAlert === 'function') {
+                window.showAlert(message, type);
+            } else {
+                alert(message);
+            }
+        }
+
+        if (checkoutForm) {
+            checkoutForm.addEventListener('submit', function(e) {
+                const shippingName = document.getElementById('shipping_name').value.trim();
+                const shippingPhone = document.getElementById('shipping_phone').value.trim();
+                const shippingAddress = document.getElementById('shipping_address').value.trim();
+                const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+
+                if (!shippingName || !shippingPhone || !shippingAddress) {
+                    e.preventDefault();
+                    showAlert('Vui lòng điền đầy đủ thông tin giao hàng.', 'error');
+                    return false;
+                }
+
+                // Validate phone number
+                const phoneRegex = /^[0-9]{10,11}$/;
+                if (!phoneRegex.test(shippingPhone)) {
+                    e.preventDefault();
+                    showAlert('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại từ 10-11 chữ số.', 'error');
+                    return false;
+                }
+
+                // Nếu chọn thanh toán qua ví điện tử
+                if (paymentMethod === 'e_wallet') {
+                    e.preventDefault();
+                    showLoading();
+
+                    // Gửi form data qua AJAX để tạo đơn hàng trước
+                    const formData = new FormData(checkoutForm);
+
+                    fetch('{{ url_for("marketplace.create_order") }}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Nếu tạo đơn hàng thành công, gọi API thanh toán
+                            const paymentData = {
+                                order_id: data.order_id,
+                                url_return: '{{ url_for("marketplace.payment_success", _external=True) }}',
+                                amount: data.total_amount,
+                                service_code: "agri_tracechain",
+                                url_callback: '{{ url_for("marketplace.payment_callback", _external=True) }}'
+                            };
+
+                            return fetch('{{ url_for("marketplace.process_payment") }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': '{{ csrf_token() }}'
+                                },
+                                body: JSON.stringify(paymentData)
+                            });
+                        } else {
+                            throw new Error(data.message || 'Có lỗi xảy ra khi tạo đơn hàng');
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        hideLoading();
+                        if (data.success && data.payment_url) {
+                            // Chuyển hướng đến trang thanh toán
+                            window.location.href = data.payment_url;
+                        } else {
+                            showAlert(data.message || 'Có lỗi xảy ra khi xử lý thanh toán', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        hideLoading();
+                        console.error('Error:', error);
+                        showAlert('Có lỗi xảy ra: ' + error.message, 'error');
+                    });
+
+                    return false;
+                }
+
+                return true;
+            });
+        }
+    });
+</script>
+{% endblock %}

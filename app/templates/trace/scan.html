@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Agri TraceChain{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-6">
+        <a href="{{ url_for('trace.index') }}" class="text-green-600 hover:underline flex items-center">
+            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Quay lại
+        </a>
+    </div>
+    
+    <div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold text-green-700 mb-6 text-center">Quét mã QR</h1>
+        
+        <div class="mb-6">
+            <div id="qr-reader" class="w-full"></div>
+            <div id="qr-reader-results" class="mt-4"></div>
+        </div>
+        
+        <div class="text-center text-gray-600">
+            <p>Hướng camera vào mã QR trên sản phẩm để quét.</p>
+            <p class="mt-2">Hoặc tải lên hình ảnh có chứa mã QR:</p>
+            
+            <form method="POST" action="{{ url_for('trace.upload_qr') }}" enctype="multipart/form-data" class="mt-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="flex justify-center">
+                    <input type="file" name="qr_image" accept="image/*" required
+                           class="px-4 py-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-r-lg hover:bg-green-700 transition duration-200">
+                        Tải lên
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/html5-qrcode@2.0.9/dist/html5-qrcode.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const html5QrCode = new Html5Qrcode("qr-reader");
+        const qrResultContainer = document.getElementById('qr-reader-results');
+        
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+            // Stop scanning
+            html5QrCode.stop().then(() => {
+                // Show success message
+                qrResultContainer.innerHTML = `
+                    <div class="bg-green-100 p-4 rounded-lg">
+                        <p class="text-green-800 font-medium">Đã quét thành công!</p>
+                        <p class="text-gray-600 mt-2">Đang chuyển hướng...</p>
+                    </div>
+                `;
+                
+                // Redirect to the decoded URL or to batch info page
+                setTimeout(() => {
+                    if (decodedText.startsWith('http')) {
+                        window.location.href = decodedText;
+                    } else {
+                        window.location.href = '/trace/batch/' + decodedText;
+                    }
+                }, 1500);
+            }).catch(err => {
+                console.error("Error stopping QR scanner:", err);
+            });
+        };
+        
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        
+        // Start scanning
+        html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            qrCodeSuccessCallback
+        ).catch(err => {
+            qrResultContainer.innerHTML = `
+                <div class="bg-red-100 p-4 rounded-lg">
+                    <p class="text-red-800 font-medium">Không thể khởi động camera</p>
+                    <p class="text-gray-600 mt-2">Vui lòng cho phép truy cập camera hoặc sử dụng tính năng tải lên hình ảnh.</p>
+                </div>
+            `;
+            console.error("Error starting QR scanner:", err);
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,5 @@
+#docs
+venv
+.DS_Store
+.augmentignore 
+.augmentconfig.json

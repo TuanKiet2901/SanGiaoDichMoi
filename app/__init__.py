@@ -1,0 +1,109 @@
+import os
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_wtf.csrf import CSRFProtect
+# from flask_login import LoginManager
+from dotenv import load_dotenv
+from flask_mail import Mail, Message
+
+# Load biến môi trường từ file .env
+load_dotenv()
+
+# Khởi tạo các extension
+db = SQLAlchemy()
+migrate = Migrate()
+csrf = CSRFProtect()
+mail = Mail()
+# login_manager = LoginManager()
+
+def create_app():
+    app = Flask(__name__)
+
+    # Cấu hình ứng dụng
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-secret-key')    
+    app.config['SECURITY_PASSWORD_SALT'] = os.getenv('SECURITY_PASSWORD_SALT', '240421')
+    #app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql+psycopg2://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    # Đặt UPLOAD_FOLDER
+    app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
+    # app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
+    app.config['QR_CODE_DIR'] = os.getenv('QR_CODE_DIR', 'static/qrcodes')
+    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USERNAME'] = 'kiet81036@gmail.com'
+    app.config['MAIL_PASSWORD'] = 'yfqjutgvjsfkjymj'
+    app.config['MAIL_DEFAULT_SENDER'] = 'kiet81036@gmail.com'
+
+    # Khởi tạo các extension với app
+    db.init_app(app)
+    migrate.init_app(app, db)
+
+    # Cấu hình CSRF
+    app.config['WTF_CSRF_ENABLED'] = True
+    app.config['WTF_CSRF_CHECK_DEFAULT'] = True
+    app.config['WTF_CSRF_TIME_LIMIT'] = None  # Không giới hạn thời gian cho CSRF token
+    csrf.init_app(app)
+
+    # login_manager.init_app(app)
+    # login_manager.login_view = 'auth.login'
+
+    # # Khởi tạo login manager
+    # from app.utils import init_login_manager
+    # init_login_manager()
+
+    # Import các model
+    with app.app_context():
+        from app.models.user import User
+        from app.models.product import Product
+        from app.models.batch import Batch
+        from app.models.trace_log import TraceLog
+        from app.models.supply_chain_step import SupplyChainStep
+        from app.models.order import Order
+        from app.models.review import Review
+        from app.models.payment import Payment
+        from app.models.blockchain_transaction import BlockchainTransaction
+
+    # Đăng ký các blueprint
+    from app.controllers.main import main_bp
+    from app.controllers.auth import auth_bp
+    from app.controllers.products import products_bp
+    from app.controllers.batches import batches_bp
+    from app.controllers.trace import trace_bp
+    from app.controllers.marketplace import marketplace_bp
+    from app.controllers.supply_chain import supply_chain_bp
+    from app.controllers.payment import payment_bp
+    from app.controllers.reviews import reviews_bp
+    from app.routes.chat import chat_bp
+
+    app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(products_bp, url_prefix='/products')
+    app.register_blueprint(batches_bp, url_prefix='/batches')
+    app.register_blueprint(trace_bp, url_prefix='/trace')
+    app.register_blueprint(marketplace_bp, url_prefix='/marketplace')
+    app.register_blueprint(supply_chain_bp, url_prefix='/supply-chain')
+    app.register_blueprint(payment_bp, url_prefix='/payment')
+    app.register_blueprint(reviews_bp, url_prefix='/reviews')
+    app.register_blueprint(chat_bp, url_prefix='/chat')
+    csrf.exempt(chat_bp)
+
+    # Tạo thư mục uploads nếu chưa tồn tại
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(os.path.join(app.static_folder, 'qrcodes'), exist_ok=True)
+
+    print(f"Static folder: {app.static_folder}")
+    print(f"Upload folder: {app.config['UPLOAD_FOLDER']}")
+
+    # Khởi tạo blockchain integration
+    # try:
+    #     from app.blockchain import init_app as init_blockchain
+    #     init_blockchain(app)
+    # except Exception as e:
+    #     app.logger.error(f"Failed to initialize blockchain integration: {str(e)}")
+
+    mail.init_app(app)
+
+    return app

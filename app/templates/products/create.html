@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Agri TraceChain{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md">
+    <h1 class="text-2xl font-bold text-green-700 mb-6">Thêm sản phẩm mới</h1>
+
+    <form method="POST" action="{{ url_for('products.create') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <div class="mb-4">
+                    <label for="name" class="block text-gray-700 font-medium mb-2">Tên sản phẩm <span class="text-red-500">*</span></label>
+                    <input type="text" id="name" name="name" required
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+
+                <div class="mb-4">
+                    <label for="category" class="block text-gray-700 font-medium mb-2">Danh mục <span class="text-red-500">*</span></label>
+                    <select id="category" name="category" required
+                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="">Chọn danh mục</option>
+                        <option value="rau-cu">Rau củ</option>
+                        <option value="trai-cay">Trái cây</option>
+                        <option value="thuy-san">Thủy sản</option>
+                        <option value="thit">Thịt</option>
+                        <option value="khac">Khác</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label for="price" class="block text-gray-700 font-medium mb-2">Giá (VNĐ) <span class="text-red-500">*</span></label>
+                    <input type="number" id="price" name="price" min="0" step="1000" required
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+
+                <div class="mb-4">
+                    <label for="image" class="block text-gray-700 font-medium mb-2">Hình ảnh sản phẩm</label>
+                    <input type="file" id="image" name="image" accept="image/*"
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <p class="text-sm text-gray-500 mt-1">Định dạng hỗ trợ: JPG, PNG, GIF, WEBP. Tối đa 5MB.</p>
+                </div>
+            </div>
+
+            <div>
+                <div class="mb-4">
+                    <label for="description" class="block text-gray-700 font-medium mb-2">Mô tả sản phẩm <span class="text-red-500">*</span></label>
+                    <textarea id="description" name="description" rows="5" required
+                              class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 font-medium mb-2">Xem trước hình ảnh</label>
+                    <div id="image-preview" class="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">
+                        <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-end space-x-4">
+            <a href="{{ url_for('products.index') }}" class="bg-gray-300 text-gray-700 py-2 px-6 rounded-lg hover:bg-gray-400 transition duration-200">
+                Hủy
+            </a>
+            <button type="submit" class="bg-green-600 text-white py-2 px-6 rounded-lg hover:bg-green-700 transition duration-200">
+                Thêm sản phẩm
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const imageInput = document.getElementById('image');
+        const imagePreview = document.getElementById('image-preview');
+
+        if (imageInput && imagePreview) {
+            imageInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+
+                    reader.onload = function(e) {
+                        imagePreview.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-contain">`;
+                    }
+
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

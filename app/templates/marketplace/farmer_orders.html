@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+
+{% block title %}Quản lý đơn hàng - Agri TraceChain{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold text-green-700 mb-6">Quản lý đơn hàng</h1>
+
+    <!-- Tabs -->
+    <div class="mb-6">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8">
+                <button onclick="showTab('bought')" class="tab-button active border-green-500 text-green-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    Đơn hàng đã mua
+                </button>
+                <button onclick="showTab('sold')" class="tab-button border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                    Đơn hàng đã bán
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Tab content -->
+    <div id="bought-tab" class="tab-content">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Đơn hàng đã mua</h2>
+        {% if bought_orders %}
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã đơn hàng</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày đặt</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng tiền</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for order in bought_orders %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap font-bold">#{{ order.id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ order.order_date.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+                                {% if order.status == 'delivered' %}bg-green-100 text-green-800
+                                {% elif order.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% elif order.status == 'confirmed' %}bg-blue-100 text-blue-800
+                                {% elif order.status == 'shipped' %}bg-purple-100 text-purple-800
+                                {% elif order.status == 'cancelled' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {% if order.status == 'delivered' %}Đã giao hàng
+                                {% elif order.status == 'pending' %}Chờ xác nhận
+                                {% elif order.status == 'confirmed' %}Đã xác nhận
+                                {% elif order.status == 'shipped' %}Đang giao hàng
+                                {% elif order.status == 'cancelled' %}Đã hủy
+                                {% else %}{{ order.status }}{% endif %}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ "{:,.0f}".format(order.total_price) }} đ</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <a href="{{ url_for('marketplace.order_detail', id=order.id) }}" class="text-blue-600 hover:text-blue-900">Chi tiết</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-white p-8 rounded-lg shadow-md text-center">
+            <h2 class="text-xl font-bold text-gray-700 mb-2">Bạn chưa có đơn hàng nào.</h2>
+        </div>
+        {% endif %}
+    </div>
+
+    <div id="sold-tab" class="tab-content hidden">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Đơn hàng đã bán</h2>
+        {% if sold_orders %}
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã đơn hàng</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người mua</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày đặt</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng tiền</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"></th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for order in sold_orders %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap font-bold">#{{ order.id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ order.buyer_id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ order.order_date.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+                                {% if order.status == 'delivered' %}bg-green-100 text-green-800
+                                {% elif order.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% elif order.status == 'confirmed' %}bg-blue-100 text-blue-800
+                                {% elif order.status == 'shipped' %}bg-purple-100 text-purple-800
+                                {% elif order.status == 'cancelled' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {% if order.status == 'delivered' %}Đã giao hàng
+                                {% elif order.status == 'pending' %}Chờ xác nhận
+                                {% elif order.status == 'confirmed' %}Đã xác nhận
+                                {% elif order.status == 'shipped' %}Đang giao hàng
+                                {% elif order.status == 'cancelled' %}Đã hủy
+                                {% else %}{{ order.status }}{% endif %}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ "{:,.0f}".format(order.total_price) }} đ</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <a href="{{ url_for('marketplace.order_detail', id=order.id) }}" class="text-blue-600 hover:text-blue-900">Chi tiết</a>
+                            {% if order.status == 'pending' %}
+                            <button class="ml-2 bg-green-600 text-white px-3 py-1 rounded confirm-order-btn" data-order-id="{{ order.id }}">Xác nhận</button>
+                            {% elif order.status == 'confirmed' %}
+                            <button class="ml-2 bg-purple-600 text-white px-3 py-1 rounded ship-order-btn" data-order-id="{{ order.id }}">Giao hàng</button>
+                            {% elif order.status == 'shipped' %}
+                            <button class="ml-2 bg-blue-600 text-white px-3 py-1 rounded complete-order-btn" data-order-id="{{ order.id }}">Hoàn thành</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-white p-8 rounded-lg shadow-md text-center">
+            <h2 class="text-xl font-bold text-gray-700 mb-2">Chưa có đơn hàng nào liên quan đến sản phẩm của bạn.</h2>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Tab switching
+    function showTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.add('hidden');
+        });
+        
+        // Show selected tab
+        document.getElementById(tabName + '-tab').classList.remove('hidden');
+        
+        // Update tab buttons
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('border-green-500', 'text-green-600');
+            btn.classList.add('border-transparent', 'text-gray-500');
+        });
+        
+        // Highlight active tab button
+        event.target.classList.remove('border-transparent', 'text-gray-500');
+        event.target.classList.add('border-green-500', 'text-green-600');
+    }
+
+    // Order status update handlers
+    document.addEventListener('DOMContentLoaded', function() {
+        // Confirm order
+        document.querySelectorAll('.confirm-order-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                updateOrderStatus(this.dataset.orderId, 'confirmed');
+            });
+        });
+
+        // Ship order
+        document.querySelectorAll('.ship-order-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                updateOrderStatus(this.dataset.orderId, 'shipped');
+            });
+        });
+
+        // Complete order
+        document.querySelectorAll('.complete-order-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                updateOrderStatus(this.dataset.orderId, 'delivered');
+            });
+        });
+    });
+
+    function updateOrderStatus(orderId, status) {
+        const statusText = {
+            'confirmed': 'xác nhận',
+            'shipped': 'giao hàng',
+            'delivered': 'hoàn thành'
+        }[status];
+
+        if (confirm(`Bạn có chắc chắn muốn ${statusText} đơn hàng này?`)) {
+            fetch(`/marketplace/orders/${orderId}/update-status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ status: status })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                alert('Có lỗi xảy ra khi cập nhật trạng thái đơn hàng.');
+            });
+        }
+    }
+</script>
+{% endblock %} 

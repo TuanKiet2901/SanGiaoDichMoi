@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Agri TraceChain{% endblock %}
+
+{% block styles %}
+<style>
+    .star-rating {
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+    }
+    
+    .star-rating input {
+        display: none;
+    }
+    
+    .star-rating label {
+        cursor: pointer;
+        width: 30px;
+        height: 30px;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23d1d5db' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'%3e%3c/polygon%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 100%;
+    }
+    
+    .star-rating input:checked ~ label,
+    .star-rating input:hover ~ label {
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%23fbbf24' stroke='%23fbbf24' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'%3e%3c/polygon%3e%3c/svg%3e");
+    }
+    
+    .review-stars {
+        display: flex;
+    }
+    
+    .review-stars .star {
+        width: 20px;
+        height: 20px;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%23d1d5db' stroke='%23d1d5db' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'%3e%3c/polygon%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 100%;
+        margin-right: 2px;
+    }
+    
+    .review-stars .star.filled {
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%23fbbf24' stroke='%23fbbf24' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'%3e%3c/polygon%3e%3c/svg%3e");
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex items-center mb-6">
+        <a href="{{ url_for('marketplace.order_detail', id=order.id) }}" class="text-green-600 hover:text-green-800 mr-2">
+            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Quay lại
+        </a>
+        <h1 class="text-2xl font-bold text-gray-800">Đánh giá đơn hàng #{{ order.id }}</h1>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Thông tin đơn hàng</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <p class="text-gray-600"><span class="font-medium">Mã đơn hàng:</span> #{{ order.id }}</p>
+                <p class="text-gray-600"><span class="font-medium">Ngày đặt:</span> {{ order.order_date.strftime('%d/%m/%Y %H:%M') }}</p>
+                <p class="text-gray-600"><span class="font-medium">Trạng thái:</span> 
+                    <span class="inline-block px-2 py-1 text-xs rounded-full 
+                        {% if order.status == 'pending' %}bg-yellow-100 text-yellow-800
+                        {% elif order.status == 'confirmed' %}bg-blue-100 text-blue-800
+                        {% elif order.status == 'shipped' %}bg-purple-100 text-purple-800
+                        {% elif order.status == 'delivered' %}bg-green-100 text-green-800
+                        {% elif order.status == 'cancelled' %}bg-red-100 text-red-800
+                        {% endif %}">
+                        {% if order.status == 'pending' %}Chờ xác nhận
+                        {% elif order.status == 'confirmed' %}Đã xác nhận
+                        {% elif order.status == 'shipped' %}Đang giao hàng
+                        {% elif order.status == 'delivered' %}Đã giao hàng
+                        {% elif order.status == 'cancelled' %}Đã hủy
+                        {% endif %}
+                    </span>
+                </p>
+            </div>
+            <div>
+                <p class="text-gray-600"><span class="font-medium">Tổng tiền:</span> {{ "{:,.0f}".format(order.total_price) }} đ</p>
+                <p class="text-gray-600"><span class="font-medium">Số lượng sản phẩm:</span> {{ order_items|length }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+        <h2 class="text-xl font-bold text-gray-800 p-6 pb-4 border-b">Sản phẩm trong đơn hàng</h2>
+        
+        <div class="divide-y divide-gray-200">
+            {% for item in order_items %}
+            <div class="p-6">
+                <div class="flex flex-col md:flex-row md:items-center">
+                    <div class="flex items-center mb-4 md:mb-0 md:mr-6">
+                        <div class="h-16 w-16 bg-gray-200 rounded-lg overflow-hidden mr-4">
+                            {% if item.product.image_url %}
+                            <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}" class="h-full w-full object-cover">
+                            {% else %}
+                            <div class="h-full w-full flex items-center justify-center text-gray-400">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800">{{ item.product.name }}</h3>
+                            <p class="text-gray-600">{{ "{:,.0f}".format(item.unit_price) }} đ x {{ item.quantity }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="ml-auto">
+                        {% if item.review %}
+                        <div class="bg-gray-100 rounded-lg p-4">
+                            <div class="flex items-center mb-2">
+                                <div class="review-stars mr-2">
+                                    {% for i in range(1, 6) %}
+                                    <div class="star {% if i <= item.review.rating %}filled{% endif %}"></div>
+                                    {% endfor %}
+                                </div>
+                                <span class="text-gray-600">Đã đánh giá</span>
+                            </div>
+                            <p class="text-gray-600 text-sm">{{ item.review.comment }}</p>
+                            <button type="button" class="text-green-600 hover:text-green-800 text-sm mt-2 edit-review-btn" data-product-id="{{ item.product_id }}" data-rating="{{ item.review.rating }}" data-comment="{{ item.review.comment }}">
+                                Chỉnh sửa đánh giá
+                            </button>
+                        </div>
+                        {% else %}
+                        <button type="button" class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200 write-review-btn" data-product-id="{{ item.product_id }}">
+                            Viết đánh giá
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Form đánh giá (ẩn ban đầu) -->
+    <div id="review-form-container" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
+        <h2 class="text-xl font-bold text-gray-800 mb-4" id="review-form-title">Viết đánh giá</h2>
+        
+        <form method="POST" action="{{ url_for('reviews.order_review', order_id=order.id) }}" id="review-form">
+            <input type="hidden" id="product_id" name="product_id" value="">
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-2">Đánh giá của bạn</label>
+                <div class="star-rating mb-2">
+                    {% for i in range(5, 0, -1) %}
+                    <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}" required>
+                    <label for="star{{ i }}"></label>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label for="comment" class="block text-gray-700 font-medium mb-2">Nhận xét của bạn</label>
+                <textarea id="comment" name="comment" rows="4" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required></textarea>
+            </div>
+            
+            <div class="flex justify-between">
+                <button type="submit" class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200">
+                    Gửi đánh giá
+                </button>
+                
+                <button type="button" id="cancel-review-btn" class="bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition duration-200">
+                    Hủy
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const reviewFormContainer = document.getElementById('review-form-container');
+        const reviewForm = document.getElementById('review-form');
+        const reviewFormTitle = document.getElementById('review-form-title');
+        const productIdInput = document.getElementById('product_id');
+        const commentInput = document.getElementById('comment');
+        const cancelReviewBtn = document.getElementById('cancel-review-btn');
+        
+        // Hiển thị form đánh giá khi nhấn nút "Viết đánh giá"
+        const writeReviewBtns = document.querySelectorAll('.write-review-btn');
+        writeReviewBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const productId = this.getAttribute('data-product-id');
+                
+                // Đặt giá trị cho form
+                productIdInput.value = productId;
+                commentInput.value = '';
+                
+                // Reset radio buttons
+                document.querySelectorAll('input[name="rating"]').forEach(input => {
+                    input.checked = false;
+                });
+                
+                // Hiển thị form
+                reviewFormTitle.textContent = 'Viết đánh giá';
+                reviewFormContainer.classList.remove('hidden');
+                
+                // Cuộn đến form
+                reviewFormContainer.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+        
+        // Hiển thị form chỉnh sửa đánh giá khi nhấn nút "Chỉnh sửa đánh giá"
+        const editReviewBtns = document.querySelectorAll('.edit-review-btn');
+        editReviewBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const productId = this.getAttribute('data-product-id');
+                const rating = this.getAttribute('data-rating');
+                const comment = this.getAttribute('data-comment');
+                
+                // Đặt giá trị cho form
+                productIdInput.value = productId;
+                commentInput.value = comment;
+                
+                // Đặt giá trị cho radio buttons
+                document.querySelector(`input[name="rating"][value="${rating}"]`).checked = true;
+                
+                // Hiển thị form
+                reviewFormTitle.textContent = 'Chỉnh sửa đánh giá';
+                reviewFormContainer.classList.remove('hidden');
+                
+                // Cuộn đến form
+                reviewFormContainer.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+        
+        // Ẩn form khi nhấn nút "Hủy"
+        cancelReviewBtn.addEventListener('click', function() {
+            reviewFormContainer.classList.add('hidden');
+        });
+    });
+</script>
+{% endblock %}

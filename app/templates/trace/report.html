@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Agri TraceChain{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-green-700">Báo cáo truy xuất</h1>
+        
+        <div class="flex space-x-4">
+            <a href="{{ url_for('trace.history') }}" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Lịch sử truy xuất
+            </a>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Tạo báo cáo truy xuất</h2>
+            
+            <form method="POST" action="{{ url_for('trace.generate_report') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="mb-4">
+                    <label for="report_type" class="block text-gray-700 font-medium mb-2">Loại báo cáo</label>
+                    <select id="report_type" name="report_type" required
+                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="batch">Theo lô hàng</option>
+                        <option value="product">Theo sản phẩm</option>
+                        <option value="date">Theo thời gian</option>
+                    </select>
+                </div>
+                
+                <div id="batch-options" class="mb-4">
+                    <label for="batch_id" class="block text-gray-700 font-medium mb-2">Lô hàng</label>
+                    <select id="batch_id" name="batch_id"
+                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="">Chọn lô hàng</option>
+                        {% for batch in batches %}
+                        <option value="{{ batch.id }}">Lô #{{ batch.id }} - {{ batch.product.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div id="product-options" class="mb-4 hidden">
+                    <label for="product_id" class="block text-gray-700 font-medium mb-2">Sản phẩm</label>
+                    <select id="product_id" name="product_id"
+                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="">Chọn sản phẩm</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}">{{ product.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div id="date-options" class="mb-4 hidden">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="date_from" class="block text-gray-700 font-medium mb-2">Từ ngày</label>
+                            <input type="date" id="date_from" name="date_from"
+                                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                        <div>
+                            <label for="date_to" class="block text-gray-700 font-medium mb-2">Đến ngày</label>
+                            <input type="date" id="date_to" name="date_to"
+                                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="format" class="block text-gray-700 font-medium mb-2">Định dạng</label>
+                    <select id="format" name="format" required
+                            class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="pdf">PDF</option>
+                        <option value="csv">CSV</option>
+                        <option value="excel">Excel</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200">
+                    Tạo báo cáo
+                </button>
+            </form>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Báo cáo gần đây</h2>
+            
+            {% if reports %}
+            <div class="space-y-4">
+                {% for report in reports %}
+                <div class="border rounded-lg p-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-medium">{{ report.title }}</p>
+                            <p class="text-sm text-gray-600">{{ report.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                        </div>
+                        <a href="{{ url_for('trace.download_report', id=report.id) }}" class="text-blue-600 hover:text-blue-900 flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            Tải xuống
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <p class="text-gray-600">Chưa có báo cáo nào được tạo.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if generated_report %}
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-lg font-bold text-gray-800 mb-4">Báo cáo đã tạo</h2>
+        
+        <div class="mb-4">
+            <h3 class="font-medium text-gray-800">{{ generated_report.title }}</h3>
+            <p class="text-sm text-gray-600">Tạo lúc: {{ generated_report.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+        </div>
+        
+        <div class="flex justify-end">
+            <a href="{{ url_for('trace.download_report', id=generated_report.id) }}" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                Tải xuống báo cáo
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const reportType = document.getElementById('report_type');
+        const batchOptions = document.getElementById('batch-options');
+        const productOptions = document.getElementById('product-options');
+        const dateOptions = document.getElementById('date-options');
+        
+        if (reportType && batchOptions && productOptions && dateOptions) {
+            reportType.addEventListener('change', function() {
+                // Hide all options first
+                batchOptions.classList.add('hidden');
+                productOptions.classList.add('hidden');
+                dateOptions.classList.add('hidden');
+                
+                // Show options based on selected report type
+                if (this.value === 'batch') {
+                    batchOptions.classList.remove('hidden');
+                } else if (this.value === 'product') {
+                    productOptions.classList.remove('hidden');
+                } else if (this.value === 'date') {
+                    dateOptions.classList.remove('hidden');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

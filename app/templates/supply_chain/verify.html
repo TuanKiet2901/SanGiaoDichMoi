@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Agri TraceChain{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-md">
+    <h1 class="text-2xl font-bold text-green-700 mb-6">Xác thực thông tin trên Blockchain</h1>
+
+    <div class="mb-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-2">Thông tin bước chuỗi cung ứng</h2>
+        <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-gray-500">Lô hàng</p>
+                    <p class="font-medium">Lô #{{ step.batch.id }} - {{ step.batch.product.name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Tên bước</p>
+                    <p class="font-medium">{{ step.step_name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Mô tả</p>
+                    <p class="font-medium">{{ step.description }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Địa điểm</p>
+                    <p class="font-medium">{{ step.location }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Thời gian</p>
+                    <p class="font-medium">{{ step.timestamp.strftime('%d/%m/%Y %H:%M') }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Người thực hiện</p>
+                    <p class="font-medium">{{ handler.name }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if step.blockchain_tx %}
+    <div class="mb-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-2">Thông tin Blockchain</h2>
+        <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-sm text-gray-500">Mã giao dịch</p>
+                    <p class="font-mono text-sm break-all">{{ step.blockchain_tx }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Trạng thái</p>
+                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        {{ blockchain_data.status }}
+                    </span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Thời gian xác thực</p>
+                    <p class="font-medium">{{ blockchain_data.timestamp }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Số khối</p>
+                    <p class="font-medium">{{ blockchain_data.block_number }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Mạng</p>
+                    <p class="font-medium">{{ blockchain_data.network }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Từ địa chỉ</p>
+                    <p class="font-mono text-sm break-all">{{ blockchain_data.from }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Đến địa chỉ</p>
+                    <p class="font-mono text-sm break-all">{{ blockchain_data.to }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Gas sử dụng</p>
+                    <p class="font-medium">{{ blockchain_data.gas_used }}</p>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <p class="text-sm text-gray-500 mb-2">Xác thực trên Blockchain</p>
+                <p class="text-xs text-gray-600">Thông tin này đã được lưu trữ trên blockchain và không thể thay đổi. Bạn có thể kiểm tra giao dịch này trên bất kỳ trình duyệt blockchain nào bằng cách sử dụng mã giao dịch.</p>
+
+                {% if 'Giả lập' not in blockchain_data.network %}
+                <a href="https://etherscan.io/tx/{{ step.blockchain_tx }}" target="_blank" class="inline-block mt-2 text-blue-600 hover:underline">
+                    Xem trên Etherscan
+                </a>
+                {% else %}
+                <p class="text-xs text-yellow-600 mt-2">Đây là giao dịch giả lập và không thể xem trên Etherscan.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="mb-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-2">Xác thực trên Blockchain</h2>
+        <div class="bg-gray-50 p-4 rounded-lg">
+            <p class="text-gray-600 mb-4">Bước chuỗi cung ứng này chưa được xác thực trên Blockchain.</p>
+
+            {% if session.get('user_id') == step.handler_id %}
+            <form method="POST" action="{{ url_for('supply_chain.verify_blockchain_submit', id=step.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 transition duration-200">
+                    Xác thực trên Blockchain
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="flex justify-between">
+        <a href="{{ url_for('batches.show', id=step.batch_id) }}" class="bg-gray-300 text-gray-700 py-2 px-6 rounded-lg hover:bg-gray-400 transition duration-200">
+            Quay lại lô hàng
+        </a>
+
+        <a href="{{ url_for('supply_chain.index') }}" class="bg-green-600 text-white py-2 px-6 rounded-lg hover:bg-green-700 transition duration-200">
+            Danh sách chuỗi cung ứng
+        </a>
+    </div>
+</div>
+{% endblock %}

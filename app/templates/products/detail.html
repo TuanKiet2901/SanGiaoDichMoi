@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} - Agri TraceChain{% endblock %}
+
+{% block styles %}
+<style>
+    .review-stars {
+        display: flex;
+    }
+
+    .review-stars .star {
+        width: 20px;
+        height: 20px;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%23d1d5db' stroke='%23d1d5db' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'%3e%3c/polygon%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 100%;
+        margin-right: 2px;
+    }
+
+    .review-stars .star.filled {
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%23fbbf24' stroke='%23fbbf24' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolygon points='12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2'%3e%3c/polygon%3e%3c/svg%3e");
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex items-center mb-6">
+        <a href="{{ url_for('products.index') }}" class="text-green-600 hover:text-green-800 mr-2">
+            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Quay lại
+        </a>
+        <h1 class="text-2xl font-bold text-gray-800">{{ product.name }}</h1>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Hình ảnh sản phẩm -->
+        <div>
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="h-96 bg-gray-200">
+                    {% if product.image_url %}
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+                    {% else %}
+                    <div class="h-full w-full flex items-center justify-center text-gray-400">
+                        <svg class="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Đánh giá sản phẩm -->
+            <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">Đánh giá sản phẩm</h2>
+                    <a href="{{ url_for('reviews.product_review', product_id=product.id) }}" class="text-green-600 hover:text-green-800">
+                        Xem tất cả
+                    </a>
+                </div>
+
+                <div class="flex items-center mb-4">
+                    <div class="review-stars mr-2">
+                        {% set avg_rating = 0 %}
+                        {% if reviews %}
+                            {% set avg_rating = (reviews|sum(attribute='rating') / reviews|length)|round(1) %}
+                        {% endif %}
+
+                        {% for i in range(1, 6) %}
+                            <div class="star {% if i <= avg_rating %}filled{% endif %}"></div>
+                        {% endfor %}
+                    </div>
+                    <span class="text-gray-600">{{ avg_rating }} ({{ reviews|length }} đánh giá)</span>
+                </div>
+
+                {% if reviews %}
+                    <div class="space-y-4">
+                        {% for review in reviews[:3] %}
+                        <div class="border-b border-gray-200 pb-4 {% if loop.last %}border-b-0 pb-0{% endif %}">
+                            <div class="flex items-center mb-2">
+                                <div class="review-stars mr-2">
+                                    {% for i in range(1, 6) %}
+                                    <div class="star {% if i <= review.rating %}filled{% endif %}"></div>
+                                    {% endfor %}
+                                </div>
+                                <span class="font-medium text-gray-800">{{ review.user.name }}</span>
+                            </div>
+                            <p class="text-gray-600 mb-2">{{ review.comment }}</p>
+                            <p class="text-gray-500 text-sm">{{ review.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if reviews|length > 3 %}
+                    <div class="mt-4 text-center">
+                        <a href="{{ url_for('reviews.product_review', product_id=product.id) }}" class="text-green-600 hover:text-green-800">
+                            Xem thêm {{ reviews|length - 3 }} đánh giá
+                        </a>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <p class="text-gray-600">Chưa có đánh giá nào cho sản phẩm này.</p>
+                {% endif %}
+
+                <div class="mt-4">
+                    <a href="{{ url_for('reviews.product_review', product_id=product.id) }}" class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200 inline-block">
+                        Viết đánh giá
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Thông tin sản phẩm -->
+        <div>
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">{{ product.name }}</h2>
+                    <p class="text-green-600 text-2xl font-bold">{{ "{:,.0f}".format(product.price) }} đ</p>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Mô tả sản phẩm</h3>
+                    <p class="text-gray-600">{{ product.description }}</p>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Thông tin chi tiết</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-gray-600"><span class="font-medium">Danh mục:</span> {{ product.category }}</p>
+                            <p class="text-gray-600"><span class="font-medium">Nhà sản xuất:</span> {{ producer.name if producer else 'Không có thông tin' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600"><span class="font-medium">Ngày tạo:</span> {{ product.created_at.strftime('%d/%m/%Y') }}</p>
+                            <p class="text-gray-600"><span class="font-medium">Cập nhật:</span> {{ product.updated_at.strftime('%d/%m/%Y') }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Số lượng</h3>
+                    <div class="flex items-center">
+                        <button id="decrease-quantity" class="bg-gray-200 text-gray-700 w-10 h-10 rounded-l-lg hover:bg-gray-300 transition duration-200">
+                            -
+                        </button>
+                        <input type="number" id="quantity" class="w-16 h-10 text-center border-t border-b border-gray-300" value="1" min="1">
+                        <button id="increase-quantity" class="bg-gray-200 text-gray-700 w-10 h-10 rounded-r-lg hover:bg-gray-300 transition duration-200">
+                            +
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                    <button id="add-to-cart" class="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition duration-200 flex-1 flex items-center justify-center" data-product-id="{{ product.id }}">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        Thêm vào giỏ hàng
+                    </button>
+
+                    <button id="buy-now" class="bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-200 flex-1 flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Mua ngay
+                    </button>
+                </div>
+            </div>
+
+            <!-- Thông tin truy xuất nguồn gốc -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-4">Truy xuất nguồn gốc</h2>
+
+                {% if batches %}
+                    <div class="space-y-4">
+                        {% for batch in batches %}
+                        <div class="border-b border-gray-200 pb-4 {% if loop.last %}border-b-0 pb-0{% endif %}">
+                            <h3 class="font-medium text-gray-800 mb-2">Lô hàng #{{ batch.id }}</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <p class="text-gray-600"><span class="font-medium">Ngày thu hoạch:</span> {{ batch.harvest_date.strftime('%d/%m/%Y') }}</p>
+                                <p class="text-gray-600"><span class="font-medium">Hạn sử dụng:</span> {{ batch.expiry_date.strftime('%d/%m/%Y') }}</p>
+                                <p class="text-gray-600"><span class="font-medium">Số lượng:</span> {{ batch.quantity }}</p>
+                                <p class="text-gray-600"><span class="font-medium">Trạng thái:</span>
+                                    <span class="inline-block px-2 py-1 text-xs rounded-full
+                                        {% if batch.status == 'harvested' %}bg-green-100 text-green-800
+                                        {% elif batch.status == 'processing' %}bg-blue-100 text-blue-800
+                                        {% elif batch.status == 'shipping' %}bg-purple-100 text-purple-800
+                                        {% elif batch.status == 'delivered' %}bg-yellow-100 text-yellow-800
+                                        {% endif %}">
+                                        {% if batch.status == 'harvested' %}Đã thu hoạch
+                                        {% elif batch.status == 'processing' %}Đang chế biến
+                                        {% elif batch.status == 'shipping' %}Đang vận chuyển
+                                        {% elif batch.status == 'delivered' %}Đã giao hàng
+                                        {% endif %}
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="mt-2">
+                                <a href="{{ url_for('trace.batch_info', qr_code=batch.qr_code) }}" class="text-green-600 hover:text-green-800">
+                                    Xem chi tiết truy xuất
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-gray-600">Chưa có thông tin truy xuất nguồn gốc cho sản phẩm này.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const quantityInput = document.getElementById('quantity');
+        const decreaseBtn = document.getElementById('decrease-quantity');
+        const increaseBtn = document.getElementById('increase-quantity');
+        const addToCartBtn = document.getElementById('add-to-cart');
+        const buyNowBtn = document.getElementById('buy-now');
+
+        // Xử lý nút tăng/giảm số lượng
+        decreaseBtn.addEventListener('click', function() {
+            let quantity = parseInt(quantityInput.value);
+            if (quantity > 1) {
+                quantityInput.value = quantity - 1;
+            }
+        });
+
+        increaseBtn.addEventListener('click', function() {
+            let quantity = parseInt(quantityInput.value);
+            quantityInput.value = quantity + 1;
+        });
+
+        // Xử lý nút thêm vào giỏ hàng
+        addToCartBtn.addEventListener('click', function() {
+            const productId = this.getAttribute('data-product-id');
+            const quantity = parseInt(quantityInput.value);
+
+            // Gửi yêu cầu AJAX để thêm vào giỏ hàng
+            fetch('/marketplace/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    quantity: quantity
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Hiển thị thông báo thành công
+                    showAlert(data.message, 'success');
+
+                    // Cập nhật số lượng giỏ hàng
+                    updateCartCount();
+                } else {
+                    // Hiển thị thông báo lỗi
+                    showAlert(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng.', 'error');
+            });
+        });
+
+        // Xử lý nút mua ngay
+        buyNowBtn.addEventListener('click', function() {
+            const productId = addToCartBtn.getAttribute('data-product-id');
+            const quantity = parseInt(quantityInput.value);
+
+            // Gửi yêu cầu AJAX để thêm vào giỏ hàng và chuyển đến trang thanh toán
+            fetch('/marketplace/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    quantity: quantity,
+                    buy_now: true
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Chuyển đến trang thanh toán
+                    window.location.href = '/marketplace/checkout';
+                } else {
+                    // Hiển thị thông báo lỗi
+                    showAlert(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng.', 'error');
+            });
+        });
+
+        // Lấy đánh giá sản phẩm
+        fetch(`/reviews/api/product/{{ product.id }}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Cập nhật số sao và số lượng đánh giá
+                    const avgRating = data.avg_rating;
+                    const reviewCount = data.count;
+
+                    // Cập nhật hiển thị đánh giá
+                    const stars = document.querySelectorAll('.review-stars .star');
+                    stars.forEach((star, index) => {
+                        if (index < avgRating) {
+                            star.classList.add('filled');
+                        } else {
+                            star.classList.remove('filled');
+                        }
+                    });
+
+                    // Cập nhật số lượng đánh giá
+                    const ratingText = document.querySelector('.review-stars + span');
+                    if (ratingText) {
+                        ratingText.textContent = `${avgRating} (${reviewCount} đánh giá)`;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching reviews:', error);
+            });
+    });
+</script>
+{% endblock %}

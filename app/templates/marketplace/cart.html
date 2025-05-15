@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Agri TraceChain{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold text-green-700 mb-6">Giỏ hàng của bạn</h1>
+
+    {% if cart_items %}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Sản phẩm
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Giá
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Số lượng
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Thành tiền
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item in cart_items %}
+                        <tr class="cart-item" data-item-id="{{ item.id }}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="h-10 w-10 bg-gray-200 rounded-lg overflow-hidden mr-3">
+                                        {% if item.product.image_url %}
+                                        <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}" class="h-full w-full object-cover">
+                                        {% else %}
+                                        <div class="h-full w-full flex items-center justify-center text-gray-400">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                            </svg>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">{{ item.product.name }}</div>
+                                        {% if item.batch %}
+                                        <div class="text-xs text-gray-500">Lô #{{ item.batch.id }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ "{:,.0f}".format(item.unit_price) }} đ</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <button class="quantity-btn minus-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-l-lg hover:bg-gray-300 transition duration-200">
+                                        -
+                                    </button>
+                                    <input type="number" class="quantity-input w-12 h-8 text-center border-t border-b border-gray-300" value="{{ item.quantity }}" min="1">
+                                    <button class="quantity-btn plus-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-r-lg hover:bg-gray-300 transition duration-200">
+                                        +
+                                    </button>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900 subtotal">{{ "{:,.0f}".format(item.subtotal) }} đ</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button class="remove-btn text-red-600 hover:text-red-900">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-lg font-bold text-gray-800 mb-4">Tổng giỏ hàng</h2>
+
+                <div class="border-t border-b py-4 mb-4">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-600">Tạm tính</span>
+                        <span class="font-medium" id="cart-subtotal">{{ "{:,.0f}".format(cart.total_amount) }} đ</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Phí vận chuyển</span>
+                        <span class="font-medium">Tính khi thanh toán</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-between mb-6">
+                    <span class="text-lg font-bold">Tổng cộng</span>
+                    <span class="text-lg font-bold text-green-600" id="cart-total">{{ "{:,.0f}".format(cart.total_amount) }} đ</span>
+                </div>
+
+                <a href="{{ url_for('marketplace.checkout') }}" class="block w-full bg-green-600 text-white text-center py-3 px-4 rounded-lg hover:bg-green-700 transition duration-200">
+                    Tiến hành thanh toán
+                </a>
+
+                <a href="{{ url_for('marketplace.index') }}" class="block w-full text-center mt-4 text-green-600 hover:underline">
+                    Tiếp tục mua sắm
+                </a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-white p-8 rounded-lg shadow-md text-center">
+        <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+        </svg>
+        <h2 class="text-xl font-bold text-gray-700 mb-2">Giỏ hàng của bạn đang trống</h2>
+        <p class="text-gray-600 mb-6">Hãy thêm sản phẩm vào giỏ hàng để tiến hành thanh toán.</p>
+
+        <a href="{{ url_for('marketplace.index') }}" class="inline-block bg-green-600 text-white py-2 px-6 rounded-lg hover:bg-green-700 transition duration-200">
+            Tiếp tục mua sắm
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Lấy CSRF token từ meta tag
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const cartItems = document.querySelectorAll('.cart-item');
+
+        cartItems.forEach(item => {
+            const itemId = item.getAttribute('data-item-id');
+            const minusBtn = item.querySelector('.minus-btn');
+            const plusBtn = item.querySelector('.plus-btn');
+            const quantityInput = item.querySelector('.quantity-input');
+            const removeBtn = item.querySelector('.remove-btn');
+            const subtotalElement = item.querySelector('.subtotal');
+
+            // Update quantity when buttons are clicked
+            if (minusBtn && plusBtn && quantityInput) {
+                minusBtn.addEventListener('click', function() {
+                    let quantity = parseInt(quantityInput.value);
+                    if (quantity > 1) {
+                        quantity--;
+                        quantityInput.value = quantity;
+                        updateCartItem(itemId, quantity);
+                    }
+                });
+
+                plusBtn.addEventListener('click', function() {
+                    let quantity = parseInt(quantityInput.value);
+                    quantity++;
+                    quantityInput.value = quantity;
+                    updateCartItem(itemId, quantity);
+                });
+
+                quantityInput.addEventListener('change', function() {
+                    let quantity = parseInt(this.value);
+                    if (quantity < 1) {
+                        quantity = 1;
+                        this.value = quantity;
+                    }
+                    updateCartItem(itemId, quantity);
+                });
+            }
+
+            // Remove item when remove button is clicked
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function() {
+                    updateCartItem(itemId, 0);
+                });
+            }
+        });
+
+        // Function to update cart item
+        function updateCartItem(itemId, quantity) {
+            fetch('/marketplace/cart/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    item_id: itemId,
+                    quantity: quantity
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (quantity === 0) {
+                        // Remove item from DOM
+                        const item = document.querySelector(`.cart-item[data-item-id="${itemId}"]`);
+                        if (item) {
+                            item.remove();
+                        }
+
+                        // If no items left, reload page to show empty cart
+                        if (document.querySelectorAll('.cart-item').length === 0) {
+                            window.location.reload();
+                        }
+                    }
+
+                    // Update cart total
+                    const cartSubtotal = document.getElementById('cart-subtotal');
+                    const cartTotal = document.getElementById('cart-total');
+
+                    if (cartSubtotal && cartTotal && data.total_amount) {
+                        const formattedTotal = new Intl.NumberFormat('vi-VN').format(data.total_amount) + ' đ';
+                        cartSubtotal.textContent = formattedTotal;
+                        cartTotal.textContent = formattedTotal;
+                    }
+
+                    // Update cart count in header
+                    updateCartCount();
+                } else {
+                    showAlert(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('Có lỗi xảy ra khi cập nhật giỏ hàng.', 'error');
+            });
+        }
+    });
+</script>
+{% endblock %}

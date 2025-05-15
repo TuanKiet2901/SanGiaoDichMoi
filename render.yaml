@@ -1,0 +1,19 @@
+services:
+  - type: postgres
+    name: agri-tracechain-db
+    plan: free
+    ipAllowList: []
+    databases:
+      - name: agri_tracechain
+        user: agri_tracechain_user
+    envVars:
+      - key: DB_HOST
+        value: localhost
+      - key: DB_PORT
+        value: 5432
+      - key: DB_NAME
+        value: agri_tracechain
+      - key: DB_USER
+        value: agri_tracechain_user
+      - key: DB_PASSWORD
+        generateValue: true 

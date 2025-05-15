@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Agri TraceChain{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-green-700">Lịch sử truy xuất</h1>
+        
+        <div class="flex space-x-4">
+            <button id="filter-button" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition duration-200 flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                </svg>
+                Lọc
+            </button>
+        </div>
+    </div>
+    
+    <!-- Filter panel -->
+    <div id="filter-panel" class="bg-gray-100 p-4 rounded-lg mb-6 hidden">
+        <form method="GET" action="{{ url_for('trace.history') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label for="batch_id" class="block text-gray-700 font-medium mb-2">Lô hàng</label>
+                <select id="batch_id" name="batch_id" 
+                        class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <option value="">Tất cả lô hàng</option>
+                    {% for batch in batches %}
+                    <option value="{{ batch.id }}" {% if request.args.get('batch_id')|int == batch.id %}selected{% endif %}>
+                        Lô #{{ batch.id }} - {{ batch.product.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label for="date_from" class="block text-gray-700 font-medium mb-2">Từ ngày</label>
+                <input type="date" id="date_from" name="date_from" value="{{ request.args.get('date_from', '') }}"
+                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div>
+                <label for="date_to" class="block text-gray-700 font-medium mb-2">Đến ngày</label>
+                <input type="date" id="date_to" name="date_to" value="{{ request.args.get('date_to', '') }}"
+                       class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div class="flex items-end">
+                <button type="submit" class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200">
+                    Áp dụng
+                </button>
+                <a href="{{ url_for('trace.history') }}" class="ml-2 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition duration-200">
+                    Đặt lại
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Trace logs list -->
+    {% if logs %}
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Lô hàng
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Sản phẩm
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Hành động
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Thời gian
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        IP
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Thao tác
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for log in logs %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">Lô #{{ log.batch.id }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">{{ log.batch.product.name }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">{{ log.action }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">{{ log.timestamp.strftime('%d/%m/%Y %H:%M') }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">{{ log.ip_address or 'Không có' }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <a href="{{ url_for('batches.show', id=log.batch_id) }}" class="text-blue-600 hover:text-blue-900">
+                            Xem lô hàng
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="mt-8 flex justify-center">
+        <nav class="inline-flex rounded-md shadow">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('trace.history', page=pagination.prev_num, **request.args) }}" 
+               class="px-3 py-2 rounded-l-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                Trước
+            </a>
+            {% else %}
+            <span class="px-3 py-2 rounded-l-md border border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed">
+                Trước
+            </span>
+            {% endif %}
+            
+            {% for page in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page %}
+                    {% if page == pagination.page %}
+                    <span class="px-3 py-2 border border-gray-300 bg-green-600 text-white">
+                        {{ page }}
+                    </span>
+                    {% else %}
+                    <a href="{{ url_for('trace.history', page=page, **request.args) }}" 
+                       class="px-3 py-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                        {{ page }}
+                    </a>
+                    {% endif %}
+                {% else %}
+                <span class="px-3 py-2 border border-gray-300 bg-white text-gray-700">
+                    ...
+                </span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <a href="{{ url_for('trace.history', page=pagination.next_num, **request.args) }}" 
+               class="px-3 py-2 rounded-r-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+                Tiếp
+            </a>
+            {% else %}
+            <span class="px-3 py-2 rounded-r-md border border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed">
+                Tiếp
+            </span>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="bg-white p-8 rounded-lg shadow-md text-center">
+        <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h2 class="text-xl font-bold text-gray-700 mb-2">Không tìm thấy lịch sử truy xuất nào</h2>
+        <p class="text-gray-600 mb-4">Không có lịch sử truy xuất nào phù hợp với tiêu chí tìm kiếm của bạn.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterButton = document.getElementById('filter-button');
+        const filterPanel = document.getElementById('filter-panel');
+        
+        if (filterButton && filterPanel) {
+            filterButton.addEventListener('click', function() {
+                filterPanel.classList.toggle('hidden');
+            });
+        }
+        
+        // Show filter panel if any filter is applied
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('batch_id') || urlParams.has('date_from') || urlParams.has('date_to')) {
+            filterPanel.classList.remove('hidden');
+        }
+    });
+</script>
+{% endblock %}

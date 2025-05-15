@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Agri TraceChain{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-lg mx-auto bg-white rounded-lg shadow-md p-8 text-center">
+        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </div>
+        
+        <h1 class="text-2xl font-bold text-gray-800 mb-4">Thanh toán thất bại</h1>
+        
+        <p class="text-gray-600 mb-6">
+            {{ error_message }}
+        </p>
+        
+        {% if order_id %}
+        <p class="text-gray-600 mb-6">
+            Mã đơn hàng: <span class="font-semibold">{{ order_id }}</span>
+        </p>
+        {% endif %}
+        
+        <div class="flex flex-col space-y-3">
+            {% if order_id %}
+            <a href="{{ url_for('marketplace.checkout') }}" class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200">
+                Thử thanh toán lại
+            </a>
+            
+            <a href="{{ url_for('marketplace.order_detail', id=order_id) }}" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition duration-200">
+                Xem chi tiết đơn hàng
+            </a>
+            {% else %}
+            <a href="{{ url_for('marketplace.cart') }}" class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200">
+                Quay lại giỏ hàng
+            </a>
+            {% endif %}
+            
+            <a href="{{ url_for('main.index') }}" class="text-green-600 hover:underline">
+                Quay lại trang chủ
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
