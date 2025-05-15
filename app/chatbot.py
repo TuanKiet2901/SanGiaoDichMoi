@@ -14,7 +14,12 @@ class Chatbot:
             products = Product.query.all()
             info = "Danh sách tất cả sản phẩm:\n"
             for p in products:
-                info += f"- {p.name}: {p.price} VNĐ. {p.description}\n"
+                info += (
+                    f"- {p.name}: {p.price} VNĐ. "
+                    f"{p.description or ''} "
+                    f"(Danh mục: {p.category or 'Không có'}) "
+                    f"Ảnh: {p.image_url or 'Không có'}\n"
+                )
             return info
 
     def get_batches_info(self):
@@ -29,11 +34,43 @@ class Chatbot:
         # Truy vấn bảng reviews, trả về đánh giá sản phẩm
         pass
 
+    def get_product_by_name(self, name):
+        with current_app.app_context():
+            product = Product.query.filter(Product.name.ilike(f"%{name}%")).first()
+            if product:
+                info = (
+                    f"Tên: {product.name}\n"
+                    f"Giá: {product.price} VNĐ\n"
+                    f"Mô tả: {product.description or 'Không có'}\n"
+                    f"Danh mục: {product.category or 'Không có'}\n"
+                    f"Ảnh: {product.image_url or 'Không có'}"
+                )
+                return info
+            else:
+                return "Không tìm thấy sản phẩm nào phù hợp với tên bạn nhập."
+
     def get_response(self, user_message):
         try:
+            # Truy vấn sản phẩm theo tên nếu phát hiện từ khóa "sản phẩm" + tên
             if "sản phẩm" in user_message.lower():
-                info = self.get_products_info()
-                prompt = f"{user_message}\nDữ liệu thực tế từ website: {info}"
+                # Tìm tên sản phẩm trong câu hỏi (giả sử tên nằm sau từ "sản phẩm")
+                parts = user_message.lower().split("sản phẩm")
+                if len(parts) > 1 and parts[1].strip():
+                    product_name = parts[1].strip()
+                    info = self.get_product_by_name(product_name)
+                    prompt = (
+                        f"Người dùng hỏi: {user_message}\n"
+                        f"Dưới đây là thông tin sản phẩm tìm được:\n{info}\n"
+                        "Chỉ trả lời dựa trên dữ liệu này, không bịa thêm."
+                    )
+                else:
+                    # Nếu không có tên, trả về tất cả sản phẩm như cũ
+                    info = self.get_products_info()
+                    prompt = (
+                        f"Người dùng hỏi: {user_message}\n"
+                        f"Dưới đây là danh sách sản phẩm thực tế trên website:\n{info}\n"
+                        "Chỉ trả lời dựa trên dữ liệu này, không bịa thêm sản phẩm nào khác."
+                    )
             elif "lô hàng" in user_message.lower():
                 info = self.get_batches_info()
                 prompt = f"{user_message}\nDữ liệu thực tế từ website: {info}"
@@ -42,6 +79,8 @@ class Chatbot:
                 prompt = f"{user_message}\nDữ liệu thực tế từ website: {info}"
             else:
                 prompt = user_message
+
+            print("DEBUG - prompt:", prompt)
 
             self.conversation_history.append({"role": "user", "content": prompt})
             response = self.client.chat.completions.create(
