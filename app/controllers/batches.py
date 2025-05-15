@@ -305,7 +305,7 @@ def qrcode(id):
     batch.product = Product.query.get(batch.product_id)
 
     # Sử dụng URL công khai từ file .env thay vì localhost
-    public_url = os.getenv('PUBLIC_URL', 'http://tracechain.id.vn')
+    public_url = os.getenv('PUBLIC_URL', 'https://tracechain4.onrender.com')
 
     # Tạo URL truy xuất
     trace_url = f"{public_url}{url_for('trace.batch_info', qr_code=batch.qr_code)}"
