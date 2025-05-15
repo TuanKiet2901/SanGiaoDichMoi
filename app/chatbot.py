@@ -9,14 +9,36 @@ class Chatbot:
         print("DEBUG - OPENAI_API_KEY:", os.getenv('OPENAI_API_KEY'))
         self.conversation_history = []
 
+    def get_products_info(self):
+        with current_app.app_context():
+            products = Product.query.all()
+            info = "Danh sách tất cả sản phẩm:\n"
+            for p in products:
+                info += f"- {p.name}: {p.price} VNĐ. {p.description}\n"
+            return info
+
+    def get_batches_info(self):
+        # Truy vấn bảng batches, trả về thông tin lô hàng
+        pass
+
+    def get_orders_info(self, user_id=None):
+        # Truy vấn bảng orders, order_items, trả về đơn hàng của user
+        pass
+
+    def get_reviews_info(self, product_id=None):
+        # Truy vấn bảng reviews, trả về đánh giá sản phẩm
+        pass
+
     def get_response(self, user_message):
         try:
             if "sản phẩm" in user_message.lower():
-                with current_app.app_context():
-                    products = Product.query.all()
-                    info = "Danh sách tất cả sản phẩm:\n"
-                    for p in products:
-                        info += f"- {p.name}: {p.price} VNĐ. {p.description}\n"
+                info = self.get_products_info()
+                prompt = f"{user_message}\nDữ liệu thực tế từ website: {info}"
+            elif "lô hàng" in user_message.lower():
+                info = self.get_batches_info()
+                prompt = f"{user_message}\nDữ liệu thực tế từ website: {info}"
+            elif "đơn hàng" in user_message.lower():
+                info = self.get_orders_info()
                 prompt = f"{user_message}\nDữ liệu thực tế từ website: {info}"
             else:
                 prompt = user_message
