@@ -77,6 +77,7 @@ def create_app():
     from app.controllers.payment import payment_bp
     from app.controllers.reviews import reviews_bp
     from app.routes.chat import chat_bp
+    from app.routes.test import test_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -89,6 +90,7 @@ def create_app():
     app.register_blueprint(reviews_bp, url_prefix='/reviews')
     app.register_blueprint(chat_bp, url_prefix='/chat')
     csrf.exempt(chat_bp)
+    app.register_blueprint(test_bp)
 
     # Tạo thư mục uploads nếu chưa tồn tại
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -96,6 +98,8 @@ def create_app():
 
     print(f"Static folder: {app.static_folder}")
     print(f"Upload folder: {app.config['UPLOAD_FOLDER']}")
+
+    
 
     # Khởi tạo blockchain integration
     # try:
