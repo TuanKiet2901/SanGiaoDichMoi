@@ -304,40 +304,168 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ==== Chatbot Floating Widget Functions ====
+
+// Hiện/ẩn khung chat
 function toggleChatbot() {
   const box = document.getElementById('chatbot-box');
-  box.style.display = (box.style.display === 'none' || box.style.display === '') ? 'flex' : 'none';
+  if (box.style.display === 'none' || box.style.display === '') {
+    box.style.display = 'flex';
+    restoreChatHistory();
+    const messagesDiv = document.getElementById('chat-messages');
+    if (messagesDiv.childElementCount === 0) {
+      addMessage('Xin chào! Tôi là Chatbot Agri TraceChain. Bạn cần hỗ trợ gì?', false);
+    }
+  } else {
+    box.style.display = 'none';
+  }
 }
 
-function addMessage(message, isUser) {
+// Thêm bóng chat (text)
+function addMessage(message, isUser, skipSave = false) {
   const messagesDiv = document.getElementById('chat-messages');
   const messageDiv = document.createElement('div');
-  messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-  messageDiv.textContent = message;
+  messageDiv.className = isUser ? 'flex justify-end' : 'flex justify-start';
+  const bubble = document.createElement('div');
+  bubble.className = 'message-bubble ' + (isUser ? 'user' : 'bot');
+  bubble.textContent = message;
+  messageDiv.appendChild(bubble);
   messagesDiv.appendChild(messageDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  if (!skipSave) saveChatHistory();
 }
 
+// Gửi tin nhắn
 async function sendMessage() {
-    const input = document.getElementById('user-input');
-    const message = input.value.trim();
-    if (!message) return;
-    addMessage(message, true);
-    input.value = '';
-    try {
-      const response = await fetch('/chat/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: message })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        addMessage(data.response, false);
+  const input = document.getElementById('user-input');
+  const message = input.value.trim();
+  if (!message) return;
+  addMessage(message, true);
+  input.value = '';
+
+  // Hiện typing indicator
+  document.getElementById('typing-indicator').classList.remove('hidden');
+
+  try {
+    const response = await fetch('/chat/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: message })
+    });
+    const data = await response.json();
+
+    // Ẩn typing indicator
+    document.getElementById('typing-indicator').classList.add('hidden');
+
+    if (response.ok) {
+      if (data.type === "products") {
+        if (data.response) {
+          addMessage(data.response, false);
+        }
+        addProductCards(data.products);
       } else {
-        addMessage('Có lỗi xảy ra khi gửi tin nhắn', false);
+        addMessage(data.response, false);
       }
-    } catch (error) {
+    } else {
       addMessage('Có lỗi xảy ra khi gửi tin nhắn', false);
     }
+  } catch (error) {
+    document.getElementById('typing-indicator').classList.add('hidden');
+    addMessage('Có lỗi xảy ra khi gửi tin nhắn', false);
   }
+}
+
 // ==== End Chatbot Floating Widget Functions ====
+
+function addProductCards(products, skipSave = false) {
+  const messagesDiv = document.getElementById('chat-messages');
+  const wrapper = document.createElement('div');
+  wrapper.className = 'grid grid-cols-1 gap-4 w-full';
+  products.forEach(product => {
+    const cardLink = document.createElement('a');
+    cardLink.href = `/products/${product.id}`;
+    cardLink.className = 'block bg-white rounded-lg shadow-md overflow-hidden flex flex-col items-center p-3 mb-2 transition hover:shadow-lg hover:scale-105 cursor-pointer';
+    cardLink.innerHTML = `
+      <img src="${product.image_url || '/static/img/no-image.png'}" alt="${product.name}" class="w-32 h-24 object-cover rounded">
+      <div class="font-bold text-lg mt-2 text-gray-800">${product.name}</div>
+      <div class="text-green-600 font-bold">${Number(product.price).toLocaleString()} đ</div>
+      <div class="my-1 text-sm text-gray-600">${product.description || ''}</div>
+    `;
+    wrapper.appendChild(cardLink);
+  });
+  messagesDiv.appendChild(wrapper);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  if (!skipSave) saveChatHistory();
+}
+
+// Hàm thêm vào giỏ hàng từ chat
+function addToCartFromChat(productId) {
+  fetch('/marketplace/cart/add', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken()
+    },
+    body: JSON.stringify({
+      product_id: productId,
+      quantity: 1
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showAlert('Đã thêm vào giỏ hàng!', 'success');
+      updateCartCount();
+    } else {
+      showAlert(data.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng.', 'error');
+    }
+  })
+  .catch(error => {
+    showAlert('Có lỗi xảy ra khi thêm vào giỏ hàng.', 'error');
+  });
+}
+
+function saveChatHistory() {
+  const messagesDiv = document.getElementById('chat-messages');
+  const history = [];
+  messagesDiv.childNodes.forEach(node => {
+    // Nếu là bóng chat text
+    const bubble = node.querySelector('.message-bubble');
+    if (bubble) {
+      history.push({
+        type: 'text',
+        text: bubble.textContent,
+        isUser: bubble.classList.contains('user')
+      });
+    } else if (node.querySelector('a')) {
+      // Nếu là card sản phẩm
+      const products = [];
+      node.querySelectorAll('a').forEach(card => {
+        products.push({
+          id: card.href.split('/products/')[1],
+          name: card.querySelector('.font-bold.text-lg').textContent,
+          price: card.querySelector('.text-green-600.font-bold').textContent.replace(' đ', '').replace(/,/g, ''),
+          description: card.querySelector('.my-1.text-sm.text-gray-600').textContent,
+          image_url: card.querySelector('img').src
+        });
+      });
+      history.push({
+        type: 'products',
+        products: products
+      });
+    }
+  });
+  localStorage.setItem('chatbot_history', JSON.stringify(history));
+}
+
+function restoreChatHistory() {
+  const history = JSON.parse(localStorage.getItem('chatbot_history') || '[]');
+  const messagesDiv = document.getElementById('chat-messages');
+  messagesDiv.innerHTML = '';
+  history.forEach(msg => {
+    if (msg.type === 'text') {
+      addMessage(msg.text, msg.isUser, true);
+    } else if (msg.type === 'products') {
+      addProductCards(msg.products, true);
+    }
+  });
+}

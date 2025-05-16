@@ -99,62 +99,50 @@
     </footer>
 
     <!-- Chatbot Floating Button & Box -->
-    <div id="chatbot-widget">
-        <div id="chatbot-toggle" onclick="toggleChatbot()">
-            💬
-        </div>
-        <div id="chatbot-box" style="display:none;">
-            <div id="chatbot-header">
-                <span>Chatbot</span>
-                <button onclick="toggleChatbot()" style="float:right;">×</button>
+    <div id="chatbot-widget" style="position: fixed; bottom: 32px; right: 32px; z-index: 9999;">
+        <!-- Nút mở chat -->
+        <button id="chatbot-toggle" onclick="toggleChatbot()" class="bg-green-600 hover:bg-green-700 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg focus:outline-none transition duration-200">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+            </svg>
+        </button>
+        <!-- Khung chat -->
+        <div id="chatbot-box" style="display:none; min-width: 340px; max-width: 360px;" class="flex flex-col bg-white rounded-2xl shadow-2xl border border-gray-200" >
+            <div id="chatbot-header" class="bg-green-600 text-white rounded-t-2xl px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                        </svg>
+                    </div>
+                    <span class="font-bold text-lg">Chatbot</span>
+                </div>
+                <button onclick="toggleChatbot()" class="text-white text-2xl font-bold hover:text-gray-200 focus:outline-none">&times;</button>
             </div>
-            <div class="chat-messages" id="chat-messages"></div>
-            <div class="chat-input">
-                <input type="text" id="user-input" placeholder="Nhập tin nhắn..." onkeypress="if(event.key==='Enter'){sendMessage();}">
-                <button onclick="sendMessage()">Gửi</button>
+            <div class="chat-messages flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50" id="chat-messages" style="height: 320px;">
+                <!-- Tin nhắn sẽ được thêm ở đây -->
+            </div>
+            <div id="typing-indicator" class="hidden flex items-center space-x-2 px-4 py-2">
+                <div class="w-7 h-7 bg-green-600 rounded-full flex items-center justify-center">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke-width="2" />
+                    </svg>
+                </div>
+                <div class="flex space-x-1">
+                    <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+                    <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                    <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                </div>
+                <span class="text-gray-500 text-sm ml-2">Đang soạn...</span>
+            </div>
+            <div class="chat-input flex items-center border-t border-gray-200 p-2 bg-white rounded-b-2xl">
+                <input type="text" id="user-input" placeholder="Nhập tin nhắn..." class="flex-1 px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-green-500" onkeypress="if(event.key==='Enter'){sendMessage();}">
+                <button onclick="sendMessage()" class="ml-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-200">Gửi</button>
             </div>
         </div>
     </div>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script>
-    function toggleChatbot() {
-      const box = document.getElementById('chatbot-box');
-      box.style.display = (box.style.display === 'none' || box.style.display === '') ? 'flex' : 'none';
-    }
-
-    function addMessage(message, isUser) {
-      const messagesDiv = document.getElementById('chat-messages');
-      const messageDiv = document.createElement('div');
-      messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-      messageDiv.textContent = message;
-      messagesDiv.appendChild(messageDiv);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-
-    async function sendMessage() {
-      const input = document.getElementById('user-input');
-      const message = input.value.trim();
-      if (!message) return;
-      addMessage(message, true);
-      input.value = '';
-      try {
-        const response = await fetch('/chat/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: message })
-        });
-        const data = await response.json();
-        if (response.ok) {
-          addMessage(data.response, false);
-        } else {
-          addMessage('Có lỗi xảy ra khi gửi tin nhắn', false);
-        }
-      } catch (error) {
-        addMessage('Có lỗi xảy ra khi gửi tin nhắn', false);
-      }
-    }
-    </script>
     {% block scripts %}{% endblock %}
 
 </body>

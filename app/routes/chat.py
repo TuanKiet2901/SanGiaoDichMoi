@@ -17,9 +17,8 @@ def chat():
     if not user_message:
         print("DEBUG - Không có tin nhắn được gửi")
         return jsonify({'error': 'Không có tin nhắn được gửi'}), 400
-        
-    response = chatbot.get_response(user_message)
-    return jsonify({'response': response})
+        #-------------------------
+    return chatbot.get_response(user_message)
 
 @chat_bp.route('/api/chat/clear', methods=['POST'])
 def clear_chat():
