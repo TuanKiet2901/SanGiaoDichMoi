@@ -129,9 +129,6 @@ def create():
             )
             db.session.add(new_batch)
 
-            # Cập nhật số lượng sản phẩm
-            product.quantity += quantity
-            
             db.session.commit()
             flash('Lô hàng đã được tạo thành công!', 'success')
             return redirect(url_for('batches.show', id=new_batch.id))
