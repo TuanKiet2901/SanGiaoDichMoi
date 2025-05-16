@@ -101,7 +101,7 @@ def create():
         product_id = request.form.get('product_id')
         harvest_date = request.form.get('harvest_date')
         expiry_date = request.form.get('expiry_date')
-        quantity = request.form.get('quantity')
+        quantity = int(request.form.get('quantity'))
         location = request.form.get('location')
         status = request.form.get('status')
 
@@ -130,7 +130,7 @@ def create():
             db.session.add(new_batch)
 
             # Cập nhật số lượng sản phẩm
-            product.quantity += int(quantity)
+            product.quantity += quantity
             
             db.session.commit()
             flash('Lô hàng đã được tạo thành công!', 'success')
