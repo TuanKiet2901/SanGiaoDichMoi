@@ -63,7 +63,8 @@ def index():
                           categories=categories,
                           current_category=category,
                           search=search,
-                          sort=sort)
+                          sort=sort,
+                          user_id=session.get('user_id'))
 
 # API lấy số lượng sản phẩm trong giỏ hàng
 @marketplace_bp.route('/cart/count')
@@ -294,6 +295,9 @@ def checkout():
 
             db.session.add(order_item)
 
+            # Trừ số lượng sản phẩm
+            deduct_product_quantity(product, cart_item.quantity)
+
         try:
             # Xóa giỏ hàng
             for item in cart.cart_items:
@@ -452,45 +456,56 @@ def create_order():
     if not shipping_name or not shipping_phone or not shipping_address or not payment_method:
         return jsonify({'success': False, 'message': 'Vui lòng điền đầy đủ thông tin giao hàng.'}), 400
 
-    # Tính tổng tiền
-    total_amount = sum(item.subtotal for item in cart.cart_items)
+    try:
+        # Tính tổng tiền
+        total_amount = sum(item.subtotal for item in cart.cart_items)
 
-    # Tạo đơn hàng mới
-    order = Order(
-        buyer_id=session['user_id'],
-        batch_id=None,  # Sẽ được cập nhật sau
-        quantity=1,  # Sẽ được cập nhật sau
-        total_price=total_amount,
-        order_date=datetime.utcnow(),
-        status='pending'
-    )
-
-    db.session.add(order)
-    db.session.flush()  # Để lấy order.id
-
-    # Thêm các sản phẩm vào đơn hàng
-    for cart_item in cart.cart_items:
-        product = Product.query.get(cart_item.product_id)
-
-        # Cập nhật thông tin đơn hàng
-        if order.batch_id is None and cart_item.batch_id is not None:
-            order.batch_id = cart_item.batch_id
-
-        order.quantity = cart_item.quantity
-
-        # Lưu thông tin sản phẩm vào OrderItem
-        order_item = OrderItem(
-            order_id=order.id,
-            product_id=cart_item.product_id,
-            batch_id=cart_item.batch_id,
-            quantity=cart_item.quantity,
-            unit_price=float(product.price),
-            subtotal=float(product.price) * cart_item.quantity
+        # Tạo đơn hàng mới
+        order = Order(
+            buyer_id=session['user_id'],
+            batch_id=None,  # Sẽ được cập nhật sau
+            quantity=1,  # Sẽ được cập nhật sau
+            total_price=total_amount,
+            order_date=datetime.utcnow(),
+            status='pending'
         )
 
-        db.session.add(order_item)
+        db.session.add(order)
+        db.session.flush()  # Để lấy order.id
 
-    try:
+        # Thêm các sản phẩm vào đơn hàng và trừ số lượng
+        for cart_item in cart.cart_items:
+            product = Product.query.get(cart_item.product_id)
+            
+            # Kiểm tra số lượng tồn kho
+            if product.quantity < cart_item.quantity:
+                db.session.rollback()
+                return jsonify({
+                    'success': False, 
+                    'message': f'Sản phẩm {product.name} chỉ còn {product.quantity} sản phẩm.'
+                }), 400
+
+            # Cập nhật thông tin đơn hàng
+            if order.batch_id is None and cart_item.batch_id is not None:
+                order.batch_id = cart_item.batch_id
+
+            order.quantity = cart_item.quantity
+
+            # Lưu thông tin sản phẩm vào OrderItem
+            order_item = OrderItem(
+                order_id=order.id,
+                product_id=cart_item.product_id,
+                batch_id=cart_item.batch_id,
+                quantity=cart_item.quantity,
+                unit_price=float(product.price),
+                subtotal=float(product.price) * cart_item.quantity
+            )
+
+            db.session.add(order_item)
+
+            # Trừ số lượng sản phẩm
+            deduct_product_quantity(product, cart_item.quantity)
+
         # Tạo bản ghi thanh toán
         payment = Payment(
             order_id=order.id,
@@ -752,3 +767,15 @@ def farmer_orders():
     return render_template('marketplace/farmer_orders.html', 
                          bought_orders=bought_orders,
                          sold_orders=sold_orders)
+
+def deduct_product_quantity(product, quantity_to_deduct):
+    # Lấy các batch còn hàng, ưu tiên batch cũ trước (theo ngày thu hoạch)
+    batches = sorted([b for b in product.batches if b.quantity > 0], key=lambda x: x.harvest_date)
+    for batch in batches:
+        if quantity_to_deduct <= 0:
+            break
+        deduct = min(batch.quantity, quantity_to_deduct)
+        batch.quantity -= deduct
+        quantity_to_deduct -= deduct
+    if quantity_to_deduct > 0:
+        raise Exception("Không đủ hàng trong các lô!")

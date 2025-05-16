@@ -5,6 +5,7 @@ from flask import current_app
 
 class Chatbot:
     def __init__(self):
+        # Khởi tạo client với API key
         self.client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
         print("DEBUG - OPENAI_API_KEY:", os.getenv('OPENAI_API_KEY'))
         self.conversation_history = []
@@ -82,18 +83,26 @@ class Chatbot:
 
             print("DEBUG - prompt:", prompt)
 
+            # Thêm tin nhắn của người dùng vào lịch sử hội thoại
             self.conversation_history.append({"role": "user", "content": prompt})
+            
+            # Gọi API với phiên bản mới
             response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=self.conversation_history,
                 max_tokens=150,
                 temperature=0.7
             )
+            
+            # Lấy nội dung phản hồi
             bot_response = response.choices[0].message.content
+            
+            # Thêm phản hồi vào lịch sử hội thoại
             self.conversation_history.append({"role": "assistant", "content": bot_response})
             return bot_response
+            
         except Exception as e:
-            print("Chatbot error:", e)
+            print("Lỗi Chatbot:", str(e))
             return "Xin lỗi, tôi đang gặp một số vấn đề kỹ thuật. Vui lòng thử lại sau."
 
     def clear_history(self):

@@ -76,7 +76,8 @@ def index():
                           products=products,
                           product_id=product_id,
                           status=status,
-                          sort=sort)
+                          sort=sort,
+                          user_id=session.get('user_id'))
 
 @batches_bp.route('/create', methods=['GET', 'POST'])
 def create():
@@ -115,19 +116,22 @@ def create():
             flash('Sản phẩm không hợp lệ.', 'error')
             return redirect(url_for('batches.create'))
 
-        # Create new batch
-        new_batch = Batch(
-            product_id=product_id,
-            harvest_date=datetime.strptime(harvest_date, '%Y-%m-%d').date(),
-            expiry_date=datetime.strptime(expiry_date, '%Y-%m-%d').date() if expiry_date else None,
-            quantity=quantity,
-            location=location,
-            status=status,
-            created_at=datetime.utcnow()
-        )
-
         try:
+            # Create new batch
+            new_batch = Batch(
+                product_id=product_id,
+                harvest_date=datetime.strptime(harvest_date, '%Y-%m-%d').date(),
+                expiry_date=datetime.strptime(expiry_date, '%Y-%m-%d').date() if expiry_date else None,
+                quantity=quantity,
+                location=location,
+                status=status,
+                created_at=datetime.utcnow()
+            )
             db.session.add(new_batch)
+
+            # Cập nhật số lượng sản phẩm
+            product.quantity += int(quantity)
+            
             db.session.commit()
             flash('Lô hàng đã được tạo thành công!', 'success')
             return redirect(url_for('batches.show', id=new_batch.id))
@@ -305,7 +309,7 @@ def qrcode(id):
     batch.product = Product.query.get(batch.product_id)
 
     # Sử dụng URL công khai từ file .env thay vì localhost
-    public_url = os.getenv('PUBLIC_URL', 'https://tracechain4.onrender.com')
+    public_url = os.getenv('PUBLIC_URL', 'http://tracechain.id.vn')
 
     # Tạo URL truy xuất
     trace_url = f"{public_url}{url_for('trace.batch_info', qr_code=batch.qr_code)}"

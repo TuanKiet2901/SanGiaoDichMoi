@@ -62,7 +62,12 @@
                                     <button class="quantity-btn minus-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-l-lg hover:bg-gray-300 transition duration-200">
                                         -
                                     </button>
-                                    <input type="number" class="quantity-input w-12 h-8 text-center border-t border-b border-gray-300" value="{{ item.quantity }}" min="1">
+                                    <input type="number" 
+                                           class="quantity-input w-12 h-8 text-center border-t border-b border-gray-300" 
+                                           value="{{ item.quantity }}" 
+                                           min="1" 
+                                           max="{{ item.product.get_available_quantity(user_id) }}"
+                                           data-max="{{ item.product.get_available_quantity(user_id) }}">
                                     <button class="quantity-btn plus-btn bg-gray-200 text-gray-700 w-8 h-8 rounded-r-lg hover:bg-gray-300 transition duration-200">
                                         +
                                     </button>
@@ -160,17 +165,29 @@
 
                 plusBtn.addEventListener('click', function() {
                     let quantity = parseInt(quantityInput.value);
-                    quantity++;
-                    quantityInput.value = quantity;
-                    updateCartItem(itemId, quantity);
+                    const maxQuantity = parseInt(quantityInput.dataset.max);
+                    
+                    if (quantity < maxQuantity) {
+                        quantity++;
+                        quantityInput.value = quantity;
+                        updateCartItem(itemId, quantity);
+                    } else {
+                        showAlert(`Số lượng vượt quá số lượng tồn kho (${maxQuantity})`, 'error');
+                    }
                 });
 
                 quantityInput.addEventListener('change', function() {
                     let quantity = parseInt(this.value);
+                    const maxQuantity = parseInt(this.dataset.max);
+                    
                     if (quantity < 1) {
                         quantity = 1;
-                        this.value = quantity;
+                    } else if (quantity > maxQuantity) {
+                        quantity = maxQuantity;
+                        showAlert(`Số lượng vượt quá số lượng tồn kho (${maxQuantity})`, 'error');
                     }
+                    
+                    this.value = quantity;
                     updateCartItem(itemId, quantity);
                 });
             }

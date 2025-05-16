@@ -19,3 +19,23 @@ class Product(db.Model):
 
     def __repr__(self):
         return f'<Product {self.name}>'
+
+    @property
+    def status(self):
+        return "Còn hàng" if self.quantity > 0 else "Hết hàng"
+
+    @property
+    def quantity(self):
+        # Tổng số lượng của tất cả các lô hàng của sản phẩm này
+        return sum(batch.quantity for batch in self.batches)
+
+    def get_available_quantity(self, user_id=None):
+        total = sum(batch.quantity for batch in self.batches)
+        if user_id:
+            from app.models.cart import Cart
+            cart = Cart.query.filter_by(user_id=user_id).first()
+            if cart:
+                cart_item = next((item for item in cart.cart_items if item.product_id == self.id), None)
+                if cart_item:
+                    total -= cart_item.quantity
+        return total

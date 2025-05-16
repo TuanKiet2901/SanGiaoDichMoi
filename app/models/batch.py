@@ -22,3 +22,12 @@ class Batch(db.Model):
 
     def __repr__(self):
         return f'<Batch {self.id} - {self.product.name if self.product else "Unknown"}>'
+
+    def get_available_quantity(self):
+        """Tính số lượng tồn của lô hàng"""
+        # Lấy tổng số lượng đã bán từ order_items
+        sold_quantity = sum(item.quantity for item in self.order_items if item.order.status != 'cancelled')
+        # Lấy tổng số lượng trong giỏ hàng
+        cart_quantity = sum(item.quantity for item in self.cart_items)
+        # Số lượng tồn = số lượng ban đầu - số lượng đã bán - số lượng trong giỏ
+        return self.quantity - sold_quantity - cart_quantity

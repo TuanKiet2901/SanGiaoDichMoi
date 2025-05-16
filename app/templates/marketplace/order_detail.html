@@ -331,6 +331,8 @@
                     Đánh giá sản phẩm
                 </a>
                 {% endif %}
+
+                <a href="{{ url_for('payment.vnpay_payment', order_id=order.id) }}" class="btn btn-primary">Thanh toán VNPay</a>
             </div>
         </div>
     </div>

@@ -84,7 +84,12 @@
 
             <div class="p-4">
                 <h2 class="text-lg font-bold text-gray-800 mb-1">{{ product.name }}</h2>
-                <p class="text-green-600 font-bold mb-2">{{ "{:,.0f}".format(product.price) }} đ</p>
+                <p class="text-green-600 font-bold mb-2">
+                    {{ "{:,.0f}".format(product.price) }} đ
+                    <span id="product-qty-{{ product.id }}" class="ml-2 px-2 py-1 text-sm rounded-full {% if product.get_available_quantity(user_id) > 0 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ product.status }} ({{ product.get_available_quantity(user_id) }})
+                    </span>
+                </p>
                 <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ product.description }}</p>
 
                 <div class="flex justify-between items-center">
@@ -92,10 +97,15 @@
                         Chi tiết
                     </a>
 
-                    <button class="add-to-cart-btn bg-green-600 text-white py-1 px-3 rounded-lg hover:bg-green-700 transition duration-200 text-sm"
+                    {% if product.get_available_quantity(user_id) > 0 %}
+                    <button class="add-to-cart bg-green-600 text-white py-1 px-3 rounded-lg hover:bg-green-700 transition duration-200 text-sm"
                             data-product-id="{{ product.id }}">
                         Thêm vào giỏ
                     </button>
+                    {% else %}
+                    <button class="add-to-cart bg-green-600 text-white py-1 px-3 rounded-lg hover:bg-green-700 transition duration-200 text-sm"
+                            data-product-id="{{ product.id }}" disabled style="opacity:0.5; cursor:not-allowed;">Hết hàng</button>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -166,9 +176,6 @@
 
 {% block scripts %}
 <script>
-    // Lấy CSRF token từ meta tag
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
     document.addEventListener('DOMContentLoaded', function() {
         // Filter panel toggle
         const filterButton = document.getElementById('filter-button');
@@ -185,45 +192,6 @@
         if (urlParams.has('category') || urlParams.has('search') || urlParams.has('sort')) {
             filterPanel.classList.remove('hidden');
         }
-
-        // Add to cart functionality
-        const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
-        const notification = document.getElementById('add-to-cart-notification');
-
-        addToCartButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const productId = this.getAttribute('data-product-id');
-
-                // Send AJAX request to add to cart
-                fetch('/marketplace/cart/add', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
-                    body: JSON.stringify({
-                        product_id: productId,
-                        quantity: 1
-                    }),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Show notification with custom alert
-                        showAlert(data.message, 'success');
-
-                        // Update cart count in header
-                        updateCartCount();
-                    } else {
-                        showAlert(data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showAlert('Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng.', 'error');
-                });
-            });
-        });
     });
 </script>
 {% endblock %}

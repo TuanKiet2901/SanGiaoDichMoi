@@ -1,5 +1,9 @@
 from app import db
 from datetime import datetime
+import hashlib
+import hmac
+import urllib.parse
+from flask import current_app
 
 class Payment(db.Model):
     __tablename__ = 'payments'
@@ -42,3 +46,25 @@ class Payment(db.Model):
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S')
         }
+
+def vnpay_create_payment_url(order_id, amount, return_url, vnp_TmnCode, vnp_HashSecret, vnp_Url):
+    vnp_Params = {
+        'vnp_Version': '2.1.0',
+        'vnp_Command': 'pay',
+        'vnp_TmnCode': vnp_TmnCode,
+        'vnp_Amount': str(int(amount) * 100),  # VNPay yêu cầu nhân 100
+        'vnp_CurrCode': 'VND',
+        'vnp_TxnRef': str(order_id),
+        'vnp_OrderInfo': f'Thanh toan don hang {order_id}',
+        'vnp_OrderType': 'other',
+        'vnp_Locale': 'vn',
+        'vnp_ReturnUrl': return_url,
+        'vnp_IpAddr': '127.0.0.1',
+        'vnp_CreateDate': datetime.now().strftime('%Y%m%d%H%M%S'),
+    }
+    sorted_params = sorted(vnp_Params.items())
+    query_string = '&'.join([f"{k}={urllib.parse.quote_plus(str(v))}" for k, v in sorted_params])
+    hashdata = '&'.join([f"{k}={v}" for k, v in sorted_params])
+    secure_hash = hmac.new(vnp_HashSecret.encode(), hashdata.encode(), hashlib.sha512).hexdigest()
+    payment_url = f"{vnp_Url}?{query_string}&vnp_SecureHash={secure_hash}"
+    return payment_url

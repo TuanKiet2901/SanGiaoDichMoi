@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, session, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session, jsonify, current_app
 from app import db
 from app.models.order import Order
-from app.models.payment import Payment
+from app.models.payment import Payment, vnpay_create_payment_url
 from datetime import datetime
 import uuid
 
@@ -266,3 +266,26 @@ def payment_report():
     return render_template('payment/report.html',
                           title='Báo cáo thanh toán',
                           report_generated=False)
+
+@payment_bp.route('/vnpay/<int:order_id>')
+def vnpay_payment(order_id):
+    order = Order.query.get_or_404(order_id)
+    vnp_TmnCode = current_app.config['VNP_TMNCODE']
+    vnp_HashSecret = current_app.config['VNP_HASHSECRET']
+    vnp_Url = current_app.config['VNP_URL']
+    vnp_ReturnUrl = current_app.config['VNP_RETURNURL']
+    payment_url = vnpay_create_payment_url(order.id, order.total_price, vnp_ReturnUrl, vnp_TmnCode, vnp_HashSecret, vnp_Url)
+    return redirect(payment_url)
+
+@payment_bp.route('/vnpay_return')
+def vnpay_return():
+    vnp_ResponseCode = request.args.get('vnp_ResponseCode')
+    vnp_TxnRef = request.args.get('vnp_TxnRef')
+    # Kiểm tra mã đơn hàng và cập nhật trạng thái thanh toán
+    if vnp_ResponseCode == '00':
+        # Thành công
+        # Cập nhật trạng thái đơn hàng, payment...
+        flash('Thanh toán thành công!', 'success')
+    else:
+        flash('Thanh toán thất bại hoặc bị hủy.', 'error')
+    return redirect(url_for('marketplace.orders'))

@@ -56,7 +56,12 @@
                         <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ product.description }}</p>
 
                         <div class="flex justify-between items-center">
-                            <span class="font-bold text-green-600">{{ "{:,.0f}".format(product.price) }} đ</span>
+                            <div>
+                                <span class="font-bold text-green-600">{{ "{:,.0f}".format(product.price) }} đ</span>
+                                <span class="ml-2 px-2 py-1 text-sm rounded-full {% if product.quantity > 0 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ product.status }}
+                                </span>
+                            </div>
 
                             <div class="flex space-x-2">
                                 <a href="{{ url_for('products.show', id=product.id) }}" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
