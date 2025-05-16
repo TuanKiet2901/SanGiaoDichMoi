@@ -199,9 +199,13 @@
                                 </p>
                             </div>
                             <div class="mt-2">
-                                <a href="{{ url_for('trace.batch_info', qr_code=batch.qr_code) }}" class="text-green-600 hover:text-green-800">
-                                    Xem chi tiết truy xuất
-                                </a>
+                                {% if batch.qr_code %}
+                                    <a href="{{ url_for('trace.batch_info', qr_code=batch.qr_code) }}" class="text-green-600 hover:text-green-800">
+                                        Xem chi tiết truy xuất
+                                    </a>
+                                {% else %}
+                                    <span class="text-gray-400">Chưa có mã QR</span>
+                                {% endif %}
                             </div>
                         </div>
                         {% endfor %}
