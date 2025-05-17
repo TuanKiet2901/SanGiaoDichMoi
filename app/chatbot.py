@@ -396,12 +396,27 @@ def chat():
     db.session.add(user_history)
     db.session.commit()
 
-    # Gọi AI hoặc xử lý trả lời ở đây
-    assistant_response = "Đây là câu trả lời mẫu của chatbot."  # Thay bằng code gọi AI thực tế
+    # GỌI LOGIC XỬ LÝ CÂU HỎI ĐÃ SETUP SẴN
+    chatbot = Chatbot()
+    assistant_response = chatbot.get_response(user_message, current_user.id)
+
+    # Nếu assistant_response là jsonify (tức là đã trả về đúng định dạng), thì lấy text để lưu vào db
+    if hasattr(assistant_response, 'get_json'):
+        try:
+            data = assistant_response.get_json()
+            text = data.get("response") or data.get("text") or str(data)
+        except Exception:
+            text = str(assistant_response)
+        assistant_response_text = text
+    else:
+        assistant_response_text = assistant_response
 
     # Lưu tin nhắn của bot vào database
-    bot_history = ChatHistory(user_id=current_user.id, message=assistant_response, is_user=False)
+    bot_history = ChatHistory(user_id=current_user.id, message=assistant_response_text, is_user=False)
     db.session.add(bot_history)
     db.session.commit()
 
-    return jsonify({'success': True, 'response': assistant_response})
+    # Trả về đúng định dạng cho frontend
+    if hasattr(assistant_response, 'get_json'):
+        return assistant_response
+    return jsonify({'success': True, 'response': assistant_response_text})
