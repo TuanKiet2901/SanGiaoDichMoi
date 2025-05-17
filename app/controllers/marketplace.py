@@ -700,16 +700,17 @@ def payment_failure():
 
 # Route cho farmer xem tất cả đơn hàng (cả mua và bán)
 @marketplace_bp.route('/farmer/orders')
+@login_required
 def farmer_orders():
-    if 'user_id' not in session or session.get('user_role') != 'farmer':
+    if current_user.role != 'farmer':
         flash('Bạn không có quyền truy cập.', 'error')
         return redirect(url_for('main.index'))
 
-    farmer_id = session['user_id']
-    
+    farmer_id = current_user.id
+
     # Lấy đơn hàng mà farmer mua
     bought_orders = Order.query.filter_by(buyer_id=farmer_id).order_by(Order.order_date.desc()).all()
-    
+
     # Lấy đơn hàng có sản phẩm do farmer bán
     sold_orders = (
         db.session.query(Order)
@@ -720,10 +721,10 @@ def farmer_orders():
         .order_by(Order.order_date.desc())
         .all()
     )
-    
-    return render_template('marketplace/farmer_orders.html', 
-                         bought_orders=bought_orders,
-                         sold_orders=sold_orders)
+
+    return render_template('marketplace/farmer_orders.html',
+                           bought_orders=bought_orders,
+                           sold_orders=sold_orders)
 
 def deduct_product_quantity(product, quantity_to_deduct):
     # Lấy các batch còn hàng, ưu tiên batch cũ trước (theo ngày thu hoạch)
