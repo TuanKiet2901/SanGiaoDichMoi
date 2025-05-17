@@ -182,7 +182,7 @@ class Chatbot:
                         price_max = int(range_match.group(2))
                     else:
                         # trên
-                        above_match = re.search(r'tren[^\d]*(\d+)', user_input_input_norm)
+                        above_match = re.search(r'tren[^\d]*(\d+)', user_input_norm)
                         if above_match:
                             price_min = int(above_match.group(1))
                         # dưới
