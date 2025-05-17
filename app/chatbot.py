@@ -34,6 +34,22 @@ class Chatbot:
         print("DEBUG - OPENAI_API_KEY:", os.getenv('OPENAI_API_KEY'))
         self.conversation_history = []
         self.last_clear_time = datetime.now()
+        self.last_product_name = None
+
+    def is_dish_name(self, text):
+        """Kiểm tra xem text có phải là tên món ăn không"""
+        # Chuẩn hóa text
+        text_norm = normalize_name(text)
+        
+        # Danh sách các từ khóa thường xuất hiện trong tên món ăn
+        dish_keywords = [
+            'canh', 'xao', 'luoc', 'nuong', 'ran', 'kho', 'hap', 'sot', 
+            'salad', 'soup', 'pizza', 'banh', 'kem', 'sinh-to', 'nuoc-ep',
+            'mut', 'mam', 'dip', 'sauce', 'soup', 'stew', 'curry', 'stir-fry'
+        ]
+        
+        # Kiểm tra xem text có chứa từ khóa món ăn không
+        return any(keyword in text_norm for keyword in dish_keywords)
 
     def get_chat_response(self, user_message):
         try:
