@@ -18,6 +18,7 @@ mail = Mail()
 login_manager = LoginManager()
 
 from app.models.user import User
+from app.models.chat_history import ChatHistory
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -71,6 +72,7 @@ def create_app():
         from app.models.review import Review
         from app.models.payment import Payment
         from app.models.blockchain_transaction import BlockchainTransaction
+        from app.models.chat_history import ChatHistory
 
     # Đăng ký các blueprint
     from app.controllers.main import main_bp

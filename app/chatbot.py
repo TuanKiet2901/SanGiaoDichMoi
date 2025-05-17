@@ -7,6 +7,8 @@ import unicodedata
 from datetime import datetime, timedelta
 from flask import Blueprint
 from flask_login import current_user, login_required
+from app import db
+from app.models.chat_history import ChatHistory
 
 RECIPE_MAP = {
     'mutdautay': "Nguyên liệu: 1kg dâu tây, 600g đường, 1 quả chanh.\nCách làm: Rửa sạch dâu tây, cắt cuống, để ráo. Ướp dâu với đường trong 3-4 tiếng cho tan đường. Bắc lên bếp đun nhỏ lửa, vớt bọt, đảo nhẹ tay. Khi dâu trong, nước sánh lại thì vắt nước cốt chanh vào, đun thêm 5 phút rồi tắt bếp. Để nguội, cho vào hũ kín bảo quản trong tủ lạnh.",
@@ -359,13 +361,20 @@ chat_api = Blueprint('chat_api', __name__)
 @chat_api.route('/api/history', methods=['GET'])
 @login_required
 def get_chat_history():
-    """Lấy lịch sử chat của user hiện tại"""
     try:
         user_id = current_user.id
-        history = session.get(f'chat_history_{user_id}', [])
+        # Lấy tối đa 50 tin nhắn gần nhất, sắp xếp theo thời gian tăng dần
+        history = ChatHistory.query.filter_by(user_id=user_id).order_by(ChatHistory.created_at.asc()).limit(50).all()
+        result = []
+        for msg in history:
+            result.append({
+                "type": "text",
+                "text": msg.message,
+                "isUser": msg.is_user
+            })
         return jsonify({
             'success': True,
-            'history': history
+            'history': result
         })
     except Exception as e:
         print("Error getting chat history:", e)
@@ -377,26 +386,22 @@ def get_chat_history():
 @chat_api.route('/api/chat', methods=['POST'])
 @login_required
 def chat():
-    try:
-        data = request.get_json()
-        user_message = data.get('message')
-        if not user_message:
-            return jsonify({
-                'success': False,
-                'error': 'Không có tin nhắn'
-            })
+    data = request.get_json()
+    user_message = data.get('message', '').strip()
+    if not user_message:
+        return jsonify({'success': False, 'error': 'Tin nhắn không được để trống.'})
 
-        # Lấy user_id từ current_user
-        user_id = current_user.id
-        
-        # Gọi chatbot để xử lý tin nhắn
-        chatbot = Chatbot()
-        response = chatbot.get_response(user_message, user_id)
-        
-        return response
-    except Exception as e:
-        print("Chat error:", e)
-        return jsonify({
-            'success': False,
-            'error': 'Có lỗi xảy ra khi xử lý tin nhắn'
-        })
+    # Lưu tin nhắn của user vào database
+    user_history = ChatHistory(user_id=current_user.id, message=user_message, is_user=True)
+    db.session.add(user_history)
+    db.session.commit()
+
+    # Gọi AI hoặc xử lý trả lời ở đây
+    assistant_response = "Đây là câu trả lời mẫu của chatbot."  # Thay bằng code gọi AI thực tế
+
+    # Lưu tin nhắn của bot vào database
+    bot_history = ChatHistory(user_id=current_user.id, message=assistant_response, is_user=False)
+    db.session.add(bot_history)
+    db.session.commit()
+
+    return jsonify({'success': True, 'response': assistant_response})

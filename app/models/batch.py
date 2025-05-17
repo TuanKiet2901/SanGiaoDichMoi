@@ -11,7 +11,7 @@ class Batch(db.Model):
     expiry_date = db.Column(db.Date)
     quantity = db.Column(db.Integer)
     location = db.Column(db.String(255))
-    status = db.Column(db.Enum('harvested', 'processing', 'shipping', 'delivered'), default='harvested')
+    status = db.Column(db.Enum('harvested', 'processing', 'shipping', 'delivered', name='batch_status_enum'), default='harvested')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships

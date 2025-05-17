@@ -11,7 +11,7 @@ class Order(db.Model):
     total_price = db.Column(db.Numeric(10, 2))
     order_date = db.Column(db.DateTime, default=datetime.utcnow)
     delivery_date = db.Column(db.DateTime)
-    status = db.Column(db.Enum('pending', 'confirmed', 'shipped', 'delivered', 'cancelled'), default='pending')
+    status = db.Column(db.Enum('pending', 'confirmed', 'shipped', 'delivered', 'cancelled', name='order_status_enum'), default='pending')
 
     # Relationships
     order_items = db.relationship('OrderItem', backref='order', lazy=True, cascade="all, delete-orphan")
