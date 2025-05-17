@@ -101,12 +101,33 @@ class Chatbot:
                 user_input_norm = strip_accents(user_message)
                 print("DEBUG: user_input_norm =", user_input_norm)
 
-                # Xử lý chào hỏi
+                # 1. Xử lý chào hỏi
                 if any(greet in user_input_norm for greet in ['xin-chao', 'hello']):
                     return jsonify({
                         "type": "text",
                         "response": "Xin chào! Tôi có thể giúp gì cho bạn hôm nay?"
                     })
+
+                # 2. Xử lý "công thức khác" (ĐƯA LÊN TRƯỚC)
+                if user_input_norm in ['cong-thuc-khac', 'cong-thuc-khac-nua', 'cong-thuc-khac-di']:
+                    if hasattr(self, 'last_recipe_list') and self.last_recipe_list:
+                        self.last_recipe_index += 1
+                        if self.last_recipe_index < len(self.last_recipe_list):
+                            recipe = self.last_recipe_list[self.last_recipe_index]
+                            return jsonify({
+                                "type": "text",
+                                "response": recipe
+                            })
+                        else:
+                            return jsonify({
+                                "type": "text",
+                                "response": "Đã hết công thức gợi ý cho sản phẩm này!"
+                            })
+                    else:
+                        return jsonify({
+                            "type": "text",
+                            "response": "Bạn hãy hỏi về một sản phẩm trước nhé!"
+                        })
 
                 # Nếu user nhắn "có" và vừa hỏi sản phẩm:
                 if user_input_norm in ['co', 'có']:
@@ -283,27 +304,6 @@ class Chatbot:
                         "type": "text",
                         "response": chat_response
                     })
-
-                # Nếu user nhắn "công thức khác"
-                if user_input_norm in ['cong-thuc-khac', 'cong-thuc-khac-nua', 'cong-thuc-khac-di']:
-                    if hasattr(self, 'last_recipe_list') and self.last_recipe_list:
-                        self.last_recipe_index += 1
-                        if self.last_recipe_index < len(self.last_recipe_list):
-                            recipe = self.last_recipe_list[self.last_recipe_index]
-                            return jsonify({
-                                "type": "text",
-                                "response": recipe
-                            })
-                        else:
-                            return jsonify({
-                                "type": "text",
-                                "response": "Đã hết công thức gợi ý cho sản phẩm này!"
-                            })
-                    else:
-                        return jsonify({
-                            "type": "text",
-                            "response": "Bạn hãy hỏi về một sản phẩm trước nhé!"
-                        })
 
                 # Khi trả về công thức đầu tiên cho sản phẩm:
                 if found_product:
