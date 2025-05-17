@@ -1,7 +1,7 @@
 import os
 import openai
 from app.models.product import Product
-from flask import current_app, jsonify, request
+from flask import current_app, jsonify, request, session
 import re
 import unicodedata
 from datetime import datetime, timedelta
@@ -34,9 +34,6 @@ class Chatbot:
         print("DEBUG - OPENAI_API_KEY:", os.getenv('OPENAI_API_KEY'))
         self.conversation_history = []
         self.last_clear_time = datetime.now()
-        self.last_product_name = None
-        self.last_recipe_list = []
-        self.last_recipe_index = 0
 
     def is_dish_name(self, text):
         """Kiểm tra xem text có phải là tên món ăn không"""
@@ -110,23 +107,19 @@ class Chatbot:
 
                 # 2. Xử lý "công thức khác" (ĐƯA LÊN TRƯỚC)
                 if user_input_norm in ['cong-thuc-khac', 'cong-thuc-khac-nua', 'cong-thuc-khac-di']:
-                    if hasattr(self, 'last_recipe_list') and self.last_recipe_list:
-                        self.last_recipe_index += 1
-                        if self.last_recipe_index < len(self.last_recipe_list):
-                            recipe = self.last_recipe_list[self.last_recipe_index]
-                            return jsonify({
-                                "type": "text",
-                                "response": recipe
-                            })
-                        else:
-                            return jsonify({
-                                "type": "text",
-                                "response": "Đã hết công thức gợi ý cho sản phẩm này!"
-                            })
+                    last_recipe_list = session.get('last_recipe_list', [])
+                    last_recipe_index = session.get('last_recipe_index', 0) + 1
+                    if last_recipe_index < len(last_recipe_list):
+                        session['last_recipe_index'] = last_recipe_index
+                        recipe = last_recipe_list[last_recipe_index]
+                        return jsonify({
+                            "type": "text",
+                            "response": recipe
+                        })
                     else:
                         return jsonify({
                             "type": "text",
-                            "response": "Bạn hãy hỏi về một sản phẩm trước nhé!"
+                            "response": "Đã hết công thức gợi ý cho sản phẩm này!"
                         })
 
                 # Nếu user nhắn "có" và vừa hỏi sản phẩm:
@@ -136,7 +129,7 @@ class Chatbot:
                     if request.json and 'product_name' in request.json:
                         product_name = request.json['product_name']
                     if not product_name:
-                        product_name = self.last_product_name
+                        product_name = session.get('last_product_name')
                     if product_name:
                         name_norm = normalize_name(product_name)
                         # Ưu tiên lấy công thức từ RECIPE_MAP
@@ -150,7 +143,7 @@ class Chatbot:
                         else:
                             prompt = f"Hãy viết công thức chi tiết cho món ăn từ '{product_name}' bằng tiếng Việt, gồm nguyên liệu và các bước thực hiện."
                             recipe = self.get_chat_response(prompt)
-                        self.last_product_name = None
+                        session['last_product_name'] = None
                         return jsonify({
                             "type": "text",
                             "response": recipe
@@ -192,7 +185,7 @@ class Chatbot:
 
                 # Xử lý câu hỏi về sản phẩm
                 if found_product:
-                    self.last_product_name = found_product.name
+                    session['last_product_name'] = found_product.name
                     response = f"Kết quả cho sản phẩm {found_product.name}:"
                     # Tìm "trên", "dưới", "từ ... đến ..." liên quan giá
                     price_min, price_max = None, None
@@ -319,8 +312,8 @@ class Chatbot:
                         ]
                     # ... các sản phẩm khác ...
                     if mon_an:
-                        self.last_recipe_list = mon_an
-                        self.last_recipe_index = 0
+                        session['last_recipe_list'] = mon_an
+                        session['last_recipe_index'] = 0
                         return jsonify({
                             "type": "text",
                             "response": mon_an[0]
