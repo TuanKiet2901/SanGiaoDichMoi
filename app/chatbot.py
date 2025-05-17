@@ -5,6 +5,8 @@ from flask import current_app, jsonify, request, session
 import re
 import unicodedata
 from datetime import datetime, timedelta
+from flask import Blueprint
+from flask_login import current_user, login_required
 
 RECIPE_MAP = {
     'mutdautay': "Nguyên liệu: 1kg dâu tây, 600g đường, 1 quả chanh.\nCách làm: Rửa sạch dâu tây, cắt cuống, để ráo. Ướp dâu với đường trong 3-4 tiếng cho tan đường. Bắc lên bếp đun nhỏ lửa, vớt bọt, đảo nhẹ tay. Khi dâu trong, nước sánh lại thì vắt nước cốt chanh vào, đun thêm 5 phút rồi tắt bếp. Để nguội, cho vào hũ kín bảo quản trong tủ lạnh.",
@@ -32,8 +34,18 @@ class Chatbot:
         # Khởi tạo client với API key
         self.client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
         print("DEBUG - OPENAI_API_KEY:", os.getenv('OPENAI_API_KEY'))
-        self.conversation_history = []
         self.last_clear_time = datetime.now()
+
+    def get_user_context(self, user_id):
+        """Lấy context chat của user từ session"""
+        if not user_id:
+            return []
+        return session.get(f'chat_history_{user_id}', [])
+
+    def save_user_context(self, user_id, context):
+        """Lưu context chat của user vào session"""
+        if user_id:
+            session[f'chat_history_{user_id}'] = context
 
     def is_dish_name(self, text):
         """Kiểm tra xem text có phải là tên món ăn không"""
@@ -50,21 +62,24 @@ class Chatbot:
         # Kiểm tra xem text có chứa từ khóa món ăn không
         return any(keyword in text_norm for keyword in dish_keywords)
 
-    def get_chat_response(self, user_message):
+    def get_chat_response(self, user_message, user_id):
         try:
+            # Lấy context chat của user
+            conversation_history = self.get_user_context(user_id)
+            
             # Thêm câu hỏi của người dùng vào lịch sử
-            self.conversation_history.append({"role": "user", "content": user_message})
+            conversation_history.append({"role": "user", "content": user_message})
             
             # Giới hạn lịch sử hội thoại để tránh token quá lớn
-            if len(self.conversation_history) > 10:
-                self.conversation_history = self.conversation_history[-10:]
+            if len(conversation_history) > 10:
+                conversation_history = conversation_history[-10:]
             
             # Gọi API OpenAI để lấy câu trả lời
             response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "Bạn là một trợ lý thân thiện của cửa hàng thực phẩm. Bạn có thể trả lời các câu hỏi về sản phẩm, chính sách cửa hàng và các vấn đề khác. Hãy trả lời ngắn gọn, thân thiện và hữu ích."},
-                    *self.conversation_history
+                    *conversation_history
                 ],
                 temperature=0.7,
                 max_tokens=1200
@@ -74,7 +89,10 @@ class Chatbot:
             assistant_response = response.choices[0].message.content
             
             # Thêm câu trả lời vào lịch sử
-            self.conversation_history.append({"role": "assistant", "content": assistant_response})
+            conversation_history.append({"role": "assistant", "content": assistant_response})
+            
+            # Lưu context mới vào session
+            self.save_user_context(user_id, conversation_history)
             
             return assistant_response
             
@@ -82,12 +100,12 @@ class Chatbot:
             print("OpenAI API error:", e)
             return "Xin lỗi, tôi đang gặp một số vấn đề kỹ thuật. Vui lòng thử lại sau."
 
-    def get_response(self, user_message):
+    def get_response(self, user_message, user_id):
         try:
             # Kiểm tra và xóa lịch sử nếu đã qua 15 phút
             current_time = datetime.now()
             if current_time - self.last_clear_time > timedelta(minutes=15):
-                self.clear_history()
+                self.clear_history(user_id)
                 print("DEBUG: Đã xóa lịch sử chat sau 15 phút")
 
             with current_app.app_context():
@@ -107,10 +125,10 @@ class Chatbot:
 
                 # 2. Xử lý "công thức khác" (ĐƯA LÊN TRƯỚC)
                 if user_input_norm in ['cong-thuc-khac', 'cong-thuc-khac-nua', 'cong-thuc-khac-di']:
-                    last_recipe_list = session.get('last_recipe_list', [])
-                    last_recipe_index = session.get('last_recipe_index', 0) + 1
+                    last_recipe_list = session.get(f'last_recipe_list_{user_id}', [])
+                    last_recipe_index = session.get(f'last_recipe_index_{user_id}', 0) + 1
                     if last_recipe_index < len(last_recipe_list):
-                        session['last_recipe_index'] = last_recipe_index
+                        session[f'last_recipe_index_{user_id}'] = last_recipe_index
                         recipe = last_recipe_list[last_recipe_index]
                         return jsonify({
                             "type": "text",
@@ -142,7 +160,7 @@ class Chatbot:
                             recipe = RECIPE_MAP[recipe_key]
                         else:
                             prompt = f"Hãy viết công thức chi tiết cho món ăn từ '{product_name}' bằng tiếng Việt, gồm nguyên liệu và các bước thực hiện."
-                            recipe = self.get_chat_response(prompt)
+                            recipe = self.get_chat_response(prompt, user_id)
                         session['last_product_name'] = None
                         return jsonify({
                             "type": "text",
@@ -152,7 +170,7 @@ class Chatbot:
                 # Nếu user nhắn tên món ăn (không cần kiểm tra RECIPE_MAP nữa)
                 if self.is_dish_name(user_message):
                     prompt = f"Hãy viết công thức chi tiết cho món ăn '{user_message}' bằng tiếng Việt, gồm nguyên liệu và các bước thực hiện."
-                    ai_recipe = self.get_chat_response(prompt)
+                    ai_recipe = self.get_chat_response(prompt, user_id)
                     return jsonify({
                         "type": "text",
                         "response": ai_recipe
@@ -292,7 +310,7 @@ class Chatbot:
                 # Nếu không có kết quả sản phẩm và không phải câu hỏi thực tế về cửa hàng
                 else:
                     # Sử dụng OpenAI để trả lời các câu hỏi chung
-                    chat_response = self.get_chat_response(user_message)
+                    chat_response = self.get_chat_response(user_message, user_id)
                     return jsonify({
                         "type": "text",
                         "response": chat_response
@@ -312,8 +330,8 @@ class Chatbot:
                         ]
                     # ... các sản phẩm khác ...
                     if mon_an:
-                        session['last_recipe_list'] = mon_an
-                        session['last_recipe_index'] = 0
+                        session[f'last_recipe_list_{user_id}'] = mon_an
+                        session[f'last_recipe_index_{user_id}'] = 0
                         return jsonify({
                             "type": "text",
                             "response": mon_an[0]
@@ -328,6 +346,57 @@ class Chatbot:
                 "response": "Xin lỗi, tôi đang gặp một số vấn đề kỹ thuật. Vui lòng thử lại sau."
             })
 
-    def clear_history(self):
-        self.conversation_history = []
+    def clear_history(self, user_id):
+        """Xóa lịch sử chat của user"""
+        if user_id:
+            session.pop(f'chat_history_{user_id}', None)
+            session.pop(f'last_recipe_list_{user_id}', None)
+            session.pop(f'last_recipe_index_{user_id}', None)
         self.last_clear_time = datetime.now()
+
+chat_api = Blueprint('chat_api', __name__)
+
+@chat_api.route('/chat/api/history', methods=['GET'])
+@login_required
+def get_chat_history():
+    """Lấy lịch sử chat của user hiện tại"""
+    try:
+        user_id = current_user.id
+        history = session.get(f'chat_history_{user_id}', [])
+        return jsonify({
+            'success': True,
+            'history': history
+        })
+    except Exception as e:
+        print("Error getting chat history:", e)
+        return jsonify({
+            'success': False,
+            'error': 'Không thể lấy lịch sử chat'
+        })
+
+@chat_api.route('/chat/api/chat', methods=['POST'])
+@login_required
+def chat():
+    try:
+        data = request.get_json()
+        user_message = data.get('message')
+        if not user_message:
+            return jsonify({
+                'success': False,
+                'error': 'Không có tin nhắn'
+            })
+
+        # Lấy user_id từ current_user
+        user_id = current_user.id
+        
+        # Gọi chatbot để xử lý tin nhắn
+        chatbot = Chatbot()
+        response = chatbot.get_response(user_message, user_id)
+        
+        return response
+    except Exception as e:
+        print("Chat error:", e)
+        return jsonify({
+            'success': False,
+            'error': 'Có lỗi xảy ra khi xử lý tin nhắn'
+        })

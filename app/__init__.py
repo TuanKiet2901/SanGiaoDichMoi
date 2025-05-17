@@ -3,7 +3,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
-# from flask_login import LoginManager
+from flask_login import LoginManager
 from dotenv import load_dotenv
 from flask_mail import Mail, Message
 
@@ -15,7 +15,7 @@ db = SQLAlchemy()
 migrate = Migrate()
 csrf = CSRFProtect()
 mail = Mail()
-# login_manager = LoginManager()
+login_manager = LoginManager()
 
 def create_app():
     app = Flask(__name__)
@@ -40,19 +40,14 @@ def create_app():
     # Khởi tạo các extension với app
     db.init_app(app)
     migrate.init_app(app, db)
+    login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'
 
     # Cấu hình CSRF
     app.config['WTF_CSRF_ENABLED'] = True
     app.config['WTF_CSRF_CHECK_DEFAULT'] = True
     app.config['WTF_CSRF_TIME_LIMIT'] = None  # Không giới hạn thời gian cho CSRF token
     csrf.init_app(app)
-
-    # login_manager.init_app(app)
-    # login_manager.login_view = 'auth.login'
-
-    # # Khởi tạo login manager
-    # from app.utils import init_login_manager
-    # init_login_manager()
 
     # Import các model
     with app.app_context():
@@ -76,7 +71,7 @@ def create_app():
     from app.controllers.supply_chain import supply_chain_bp
     from app.controllers.payment import payment_bp
     from app.controllers.reviews import reviews_bp
-    from app.routes.chat import chat_bp
+    from app.chatbot import chat_api  # Sửa import chat_api
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -87,8 +82,8 @@ def create_app():
     app.register_blueprint(supply_chain_bp, url_prefix='/supply-chain')
     app.register_blueprint(payment_bp, url_prefix='/payment')
     app.register_blueprint(reviews_bp, url_prefix='/reviews')
-    app.register_blueprint(chat_bp, url_prefix='/chat')
-    csrf.exempt(chat_bp)
+    app.register_blueprint(chat_api, url_prefix='/chat')  # Sửa đăng ký chat_api
+    csrf.exempt(chat_api)
 
     # Tạo thư mục uploads nếu chưa tồn tại
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
