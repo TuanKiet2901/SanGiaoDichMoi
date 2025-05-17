@@ -9,6 +9,7 @@ from flask import Blueprint
 from flask_login import current_user, login_required
 from app import db
 from app.models.chat_history import ChatHistory
+import json
 
 RECIPE_MAP = {
     'mutdautay': "Nguyên liệu: 1kg dâu tây, 600g đường, 1 quả chanh.\nCách làm: Rửa sạch dâu tây, cắt cuống, để ráo. Ướp dâu với đường trong 3-4 tiếng cho tan đường. Bắc lên bếp đun nhỏ lửa, vớt bọt, đảo nhẹ tay. Khi dâu trong, nước sánh lại thì vắt nước cốt chanh vào, đun thêm 5 phút rồi tắt bếp. Để nguội, cho vào hũ kín bảo quản trong tủ lạnh.",
@@ -249,6 +250,16 @@ class Chatbot:
                             "category": p.category
                         })
                     if filtered:
+                        # Lưu card sản phẩm vào chat_history
+                        bot_history = ChatHistory(
+                            user_id=user_id,
+                            message=response,  # "Các sản phẩm bạn có thể quan tâm là:"
+                            is_user=False,
+                            type="products",
+                            data=json.dumps(filtered)
+                        )
+                        db.session.add(bot_history)
+                        db.session.commit()
                         return jsonify({
                             "type": "products",
                             "response": response,
@@ -304,6 +315,16 @@ class Chatbot:
 
                 # Trả về kết quả sản phẩm nếu có
                 if product_list:
+                    # Lưu card sản phẩm vào chat_history
+                    bot_history = ChatHistory(
+                        user_id=user_id,
+                        message="Các sản phẩm bạn có thể quan tâm là:",
+                        is_user=False,
+                        type="products",
+                        data=json.dumps(product_list)
+                    )
+                    db.session.add(bot_history)
+                    db.session.commit()
                     return jsonify({
                         "type": "products",
                         "response": "Các sản phẩm bạn có thể quan tâm là:",
@@ -363,15 +384,21 @@ chat_api = Blueprint('chat_api', __name__)
 def get_chat_history():
     try:
         user_id = current_user.id
-        # Lấy tối đa 50 tin nhắn gần nhất, sắp xếp theo thời gian tăng dần
         history = ChatHistory.query.filter_by(user_id=user_id).order_by(ChatHistory.created_at.asc()).limit(50).all()
         result = []
         for msg in history:
-            result.append({
-                "type": "text",
-                "text": msg.message,
-                "isUser": msg.is_user
-            })
+            if msg.type == "products":
+                result.append({
+                    "type": "products",
+                    "text": msg.message,
+                    "products": json.loads(msg.data) if msg.data else []
+                })
+            else:
+                result.append({
+                    "type": "text",
+                    "text": msg.message,
+                    "isUser": msg.is_user
+                })
         return jsonify({
             'success': True,
             'history': result
