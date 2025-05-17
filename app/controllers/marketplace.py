@@ -377,7 +377,7 @@ def order_detail(id):
 @login_required
 def update_order_status(id):
     # Kiểm tra quyền truy cập (chỉ admin hoặc người bán mới có thể cập nhật trạng thái)
-    if not current_user.is_admin and current_user.role != 'farmer':
+    if current_user.role not in ['admin', 'farmer']:
         return jsonify({'success': False, 'message': 'Bạn không có quyền cập nhật trạng thái đơn hàng.'}), 403
 
     # Lấy thông tin đơn hàng
