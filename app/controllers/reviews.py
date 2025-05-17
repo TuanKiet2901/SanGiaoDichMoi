@@ -6,24 +6,21 @@ from app.models.order_item import OrderItem
 from app.models.product import Product
 from app.models.user import User
 from datetime import datetime
+from flask_login import login_required, current_user
 
 reviews_bp = Blueprint('reviews', __name__)
 
 # Trang đánh giá sản phẩm
 @reviews_bp.route('/product/<int:product_id>', methods=['GET', 'POST'])
+@login_required
 def product_review(product_id):
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để đánh giá sản phẩm.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy thông tin sản phẩm
     product = Product.query.get_or_404(product_id)
 
     # Kiểm tra người dùng đã mua sản phẩm này chưa
     order_items = OrderItem.query.join(Order).filter(
         OrderItem.product_id == product_id,
-        Order.buyer_id == session['user_id'],
+        Order.buyer_id == current_user.id,
         Order.status == 'delivered'
     ).all()
 
@@ -33,7 +30,7 @@ def product_review(product_id):
 
     # Kiểm tra người dùng đã đánh giá sản phẩm này chưa
     existing_review = Review.query.filter_by(
-        user_id=session['user_id'],
+        user_id=current_user.id,
         product_id=product_id
     ).first()
 
@@ -47,7 +44,7 @@ def product_review(product_id):
         else:
             # Tạo đánh giá mới
             review = Review(
-                user_id=session['user_id'],
+                user_id=current_user.id,
                 product_id=product_id,
                 order_id=order_items[0].order_id,  # Lấy order_id từ order_item đầu tiên
                 rating=request.form.get('rating', type=int),
@@ -100,17 +97,13 @@ def api_product_reviews(product_id):
 
 # Trang đánh giá đơn hàng
 @reviews_bp.route('/order/<int:order_id>', methods=['GET', 'POST'])
+@login_required
 def order_review(order_id):
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để đánh giá đơn hàng.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy thông tin đơn hàng
     order = Order.query.get_or_404(order_id)
 
     # Kiểm tra quyền truy cập
-    if order.buyer_id != session['user_id']:
+    if order.buyer_id != current_user.id:
         flash('Bạn không có quyền đánh giá đơn hàng này.', 'error')
         return redirect(url_for('marketplace.orders'))
 
@@ -126,7 +119,7 @@ def order_review(order_id):
         item.product = Product.query.get(item.product_id)
         # Kiểm tra đã đánh giá sản phẩm này chưa
         item.review = Review.query.filter_by(
-            user_id=session['user_id'],
+            user_id=current_user.id,
             product_id=item.product_id,
             order_id=order_id
         ).first()
@@ -145,7 +138,7 @@ def order_review(order_id):
 
         # Kiểm tra đã đánh giá sản phẩm này chưa
         existing_review = Review.query.filter_by(
-            user_id=session['user_id'],
+            user_id=current_user.id,
             product_id=product_id,
             order_id=order_id
         ).first()
@@ -159,7 +152,7 @@ def order_review(order_id):
         else:
             # Tạo đánh giá mới
             review = Review(
-                user_id=session['user_id'],
+                user_id=current_user.id,
                 product_id=product_id,
                 order_id=order_id,
                 rating=rating,

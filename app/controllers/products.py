@@ -9,6 +9,7 @@ from app.models.user import User
 from app.models.batch import Batch
 from app.models.review import Review
 import cloudinary.uploader
+from flask_login import login_required, current_user
 
 products_bp = Blueprint('products', __name__)
 
@@ -99,13 +100,10 @@ def index():
                           sort=sort)
 
 @products_bp.route('/create', methods=['GET', 'POST'])
+@login_required
 def create():
     # Check if user is logged in and is a farmer
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để thêm sản phẩm mới.', 'error')
-        return redirect(url_for('auth.login'))
-
-    if session.get('user_role') != 'farmer':
+    if current_user.role != 'farmer':
         flash('Chỉ nhà cung cấp mới có thể thêm sản phẩm mới.', 'error')
         return redirect(url_for('products.index'))
 
@@ -150,7 +148,7 @@ def create():
             category=category,
             price=price,
             image_url=image_url,
-            user_id=session['user_id'],
+            user_id=current_user.id,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
@@ -193,17 +191,13 @@ def show(id):
                           reviews=reviews)
 
 @products_bp.route('/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit(id):
-    # Check if user is logged in
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để chỉnh sửa sản phẩm.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Get product by ID
     product = Product.query.get_or_404(id)
 
     # Check if user is the owner of the product
-    if product.user_id != session['user_id']:
+    if product.user_id != current_user.id:
         flash('Bạn không có quyền chỉnh sửa sản phẩm này.', 'error')
         return redirect(url_for('products.show', id=id))
 

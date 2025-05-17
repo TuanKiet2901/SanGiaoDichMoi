@@ -5,6 +5,7 @@ import base64
 from io import BytesIO
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app
+from flask_login import login_required, current_user
 from app import db
 from app.models.batch import Batch
 from app.models.product import Product
@@ -14,12 +15,8 @@ from app.models.supply_chain_step import SupplyChainStep
 batches_bp = Blueprint('batches', __name__)
 
 @batches_bp.route('/')
+@login_required
 def index():
-    # Check if user is logged in
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xem danh sách lô hàng.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Get query parameters for filtering and sorting
     product_id = request.args.get('product_id', '')
     status = request.args.get('status', '')
@@ -31,9 +28,9 @@ def index():
     query = Batch.query
 
     # If user is a farmer, only show their batches
-    if session.get('user_role') == 'farmer':
+    if current_user.role == 'farmer':
         # Get all products owned by the farmer
-        farmer_products = Product.query.filter_by(user_id=session['user_id']).all()
+        farmer_products = Product.query.filter_by(user_id=current_user.id).all()
         farmer_product_ids = [product.id for product in farmer_products]
         query = query.filter(Batch.product_id.in_(farmer_product_ids))
 
@@ -64,8 +61,8 @@ def index():
         batch.product = Product.query.get(batch.product_id)
 
     # Get products for filter dropdown
-    if session.get('user_role') == 'farmer':
-        products = Product.query.filter_by(user_id=session['user_id']).all()
+    if current_user.role == 'farmer':
+        products = Product.query.filter_by(user_id=current_user.id).all()
     else:
         products = Product.query.all()
 
@@ -76,17 +73,13 @@ def index():
                           products=products,
                           product_id=product_id,
                           status=status,
-                          sort=sort,
-                          user_id=session.get('user_id'))
+                          sort=sort)
 
 @batches_bp.route('/create', methods=['GET', 'POST'])
+@login_required
 def create():
-    # Check if user is logged in and is a farmer
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để thêm lô hàng mới.', 'error')
-        return redirect(url_for('auth.login'))
-
-    if session.get('user_role') != 'farmer':
+    # Check if user is a farmer
+    if current_user.role != 'farmer':
         flash('Chỉ nhà cung cấp mới có thể thêm lô hàng mới.', 'error')
         return redirect(url_for('batches.index'))
 
@@ -94,7 +87,7 @@ def create():
     product_id = request.args.get('product_id')
 
     # Get all products owned by the farmer
-    products = Product.query.filter_by(user_id=session['user_id']).all()
+    products = Product.query.filter_by(user_id=current_user.id).all()
 
     if request.method == 'POST':
         # Get form data
@@ -112,7 +105,7 @@ def create():
 
         # Check if product belongs to the farmer
         product = Product.query.get(product_id)
-        if not product or product.user_id != session['user_id']:
+        if not product or product.user_id != current_user.id:
             flash('Sản phẩm không hợp lệ.', 'error')
             return redirect(url_for('batches.create'))
 
@@ -143,6 +136,7 @@ def create():
                           product_id=product_id)
 
 @batches_bp.route('/<int:id>')
+@login_required
 def show(id):
     # Get batch by ID
     batch = Batch.query.get_or_404(id)
@@ -162,12 +156,8 @@ def show(id):
                           supply_chain_steps=supply_chain_steps)
 
 @batches_bp.route('/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit(id):
-    # Check if user is logged in
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để chỉnh sửa lô hàng.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Get batch by ID
     batch = Batch.query.get_or_404(id)
 
@@ -175,12 +165,12 @@ def edit(id):
     batch.product = Product.query.get(batch.product_id)
 
     # Check if user is the owner of the product
-    if batch.product.user_id != session['user_id']:
+    if batch.product.user_id != current_user.id:
         flash('Bạn không có quyền chỉnh sửa lô hàng này.', 'error')
         return redirect(url_for('batches.show', id=id))
 
     # Get all products owned by the farmer
-    products = Product.query.filter_by(user_id=session['user_id']).all()
+    products = Product.query.filter_by(user_id=current_user.id).all()
 
     if request.method == 'POST':
         # Get form data
@@ -198,7 +188,7 @@ def edit(id):
 
         # Check if product belongs to the farmer
         product = Product.query.get(product_id)
-        if not product or product.user_id != session['user_id']:
+        if not product or product.user_id != current_user.id:
             flash('Sản phẩm không hợp lệ.', 'error')
             return redirect(url_for('batches.edit', id=id))
 
@@ -225,12 +215,8 @@ def edit(id):
                           products=products)
 
 @batches_bp.route('/<int:id>/delete', methods=['POST'])
+@login_required
 def delete(id):
-    # Check if user is logged in
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xóa lô hàng.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Get batch by ID
     batch = Batch.query.get_or_404(id)
 
@@ -238,7 +224,7 @@ def delete(id):
     batch.product = Product.query.get(batch.product_id)
 
     # Check if user is the owner of the product
-    if batch.product.user_id != session['user_id']:
+    if batch.product.user_id != current_user.id:
         flash('Bạn không có quyền xóa lô hàng này.', 'error')
         return redirect(url_for('batches.show', id=id))
 
@@ -260,12 +246,8 @@ def delete(id):
         return redirect(url_for('batches.edit', id=id))
 
 @batches_bp.route('/<int:id>/generate_qr', methods=['GET'])
+@login_required
 def generate_qr(id):
-    # Check if user is logged in
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để tạo mã QR.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Get batch by ID
     batch = Batch.query.get_or_404(id)
 
@@ -273,7 +255,7 @@ def generate_qr(id):
     batch.product = Product.query.get(batch.product_id)
 
     # Check if user is the owner of the product
-    if batch.product.user_id != session['user_id']:
+    if batch.product.user_id != current_user.id:
         flash('Bạn không có quyền tạo mã QR cho lô hàng này.', 'error')
         return redirect(url_for('batches.show', id=id))
 
@@ -293,6 +275,7 @@ def generate_qr(id):
         return redirect(url_for('batches.show', id=id))
 
 @batches_bp.route('/<int:id>/qrcode')
+@login_required
 def qrcode(id):
     # Get batch by ID
     batch = Batch.query.get_or_404(id)

@@ -12,6 +12,7 @@ from app.models.user import User
 from app.models.trace_log import TraceLog
 from app.models.supply_chain_step import SupplyChainStep
 from app.models.report import Report
+from flask_login import login_required, current_user
 
 trace_bp = Blueprint('trace', __name__)
 
@@ -88,12 +89,8 @@ def verify_blockchain(tx_hash):
     })
 
 @trace_bp.route('/history')
+@login_required
 def history():
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xem lịch sử truy xuất.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy các tham số tìm kiếm và lọc
     batch_id = request.args.get('batch_id', '')
     date_from = request.args.get('date_from', '')
@@ -105,9 +102,9 @@ def history():
     query = TraceLog.query
 
     # Nếu là nông dân, chỉ hiển thị các log của lô hàng của họ
-    if session.get('user_role') == 'farmer':
+    if current_user.role == 'farmer':
         # Lấy tất cả sản phẩm của nông dân
-        farmer_products = Product.query.filter_by(user_id=session['user_id']).all()
+        farmer_products = Product.query.filter_by(user_id=current_user.id).all()
         farmer_product_ids = [product.id for product in farmer_products]
 
         # Lấy tất cả lô hàng của các sản phẩm đó
@@ -143,7 +140,7 @@ def history():
         log.batch.product = Product.query.get(log.batch.product_id)
 
     # Lấy danh sách lô hàng cho dropdown lọc
-    if session.get('user_role') == 'farmer':
+    if current_user.role == 'farmer':
         batches = Batch.query.filter(Batch.product_id.in_(farmer_product_ids)).all()
     else:
         batches = Batch.query.all()
@@ -162,15 +159,11 @@ def history():
                           date_to=date_to)
 
 @trace_bp.route('/report')
+@login_required
 def report():
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để tạo báo cáo.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy danh sách lô hàng và sản phẩm cho form
-    if session.get('user_role') == 'farmer':
-        products = Product.query.filter_by(user_id=session['user_id']).all()
+    if current_user.role == 'farmer':
+        products = Product.query.filter_by(user_id=current_user.id).all()
         product_ids = [product.id for product in products]
         batches = Batch.query.filter(Batch.product_id.in_(product_ids)).all()
     else:
@@ -182,7 +175,7 @@ def report():
         batch.product = Product.query.get(batch.product_id)
 
     # Lấy các báo cáo gần đây
-    reports = Report.query.filter_by(user_id=session['user_id']).order_by(Report.created_at.desc()).limit(5).all()
+    reports = Report.query.filter_by(user_id=current_user.id).order_by(Report.created_at.desc()).limit(5).all()
 
     return render_template('trace/report.html',
                           title='Báo cáo truy xuất',
@@ -191,12 +184,8 @@ def report():
                           reports=reports)
 
 @trace_bp.route('/report/generate', methods=['POST'])
+@login_required
 def generate_report():
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để tạo báo cáo.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy dữ liệu từ form
     report_type = request.form.get('report_type')
     batch_id = request.form.get('batch_id')
@@ -227,9 +216,9 @@ def generate_report():
             return redirect(url_for('trace.report'))
 
         # Kiểm tra quyền truy cập
-        if session.get('user_role') == 'farmer':
+        if current_user.role == 'farmer':
             product = Product.query.get(batch.product_id)
-            if product.user_id != session['user_id']:
+            if product.user_id != current_user.id:
                 flash('Bạn không có quyền tạo báo cáo cho lô hàng này.', 'error')
                 return redirect(url_for('trace.report'))
 
@@ -247,7 +236,7 @@ def generate_report():
             return redirect(url_for('trace.report'))
 
         # Kiểm tra quyền truy cập
-        if session.get('user_role') == 'farmer' and product.user_id != session['user_id']:
+        if current_user.role == 'farmer' and product.user_id != current_user.id:
             flash('Bạn không có quyền tạo báo cáo cho sản phẩm này.', 'error')
             return redirect(url_for('trace.report'))
 
@@ -270,9 +259,9 @@ def generate_report():
         title += f"từ {date_from} đến {date_to}"
 
     # Nếu là nông dân, chỉ hiển thị các log của lô hàng của họ
-    if session.get('user_role') == 'farmer' and report_type == 'date':
+    if current_user.role == 'farmer' and report_type == 'date':
         # Lấy tất cả sản phẩm của nông dân
-        farmer_products = Product.query.filter_by(user_id=session['user_id']).all()
+        farmer_products = Product.query.filter_by(user_id=current_user.id).all()
         farmer_product_ids = [product.id for product in farmer_products]
 
         # Lấy tất cả lô hàng của các sản phẩm đó
@@ -321,7 +310,7 @@ def generate_report():
         title=title,
         file_path=file_path,
         file_type=format,
-        user_id=session['user_id'],
+        user_id=current_user.id,
         created_at=datetime.utcnow()
     )
 
@@ -335,8 +324,8 @@ def generate_report():
         return redirect(url_for('trace.report'))
 
     # Lấy danh sách sản phẩm cho form
-    if session.get('user_role') == 'farmer':
-        products = Product.query.filter_by(user_id=session['user_id']).all()
+    if current_user.role == 'farmer':
+        products = Product.query.filter_by(user_id=current_user.id).all()
     else:
         products = Product.query.all()
 
@@ -344,21 +333,17 @@ def generate_report():
                           title='Báo cáo truy xuất',
                           batches=batches,
                           products=products,
-                          reports=Report.query.filter_by(user_id=session['user_id']).order_by(Report.created_at.desc()).limit(5).all(),
+                          reports=Report.query.filter_by(user_id=current_user.id).order_by(Report.created_at.desc()).limit(5).all(),
                           generated_report=report)
 
 @trace_bp.route('/report/download/<int:id>')
+@login_required
 def download_report(id):
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để tải báo cáo.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy thông tin báo cáo
     report = Report.query.get_or_404(id)
 
     # Kiểm tra quyền truy cập
-    if report.user_id != session['user_id']:
+    if report.user_id != current_user.id:
         flash('Bạn không có quyền tải báo cáo này.', 'error')
         return redirect(url_for('trace.report'))
 

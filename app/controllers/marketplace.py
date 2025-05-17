@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session, jsonify, current_app
+from flask_login import login_required, current_user
 from app import db, csrf
 from app.models.product import Product
 from app.models.batch import Batch
@@ -63,18 +64,17 @@ def index():
                           categories=categories,
                           current_category=category,
                           search=search,
-                          sort=sort,
-                          user_id=session.get('user_id'))
+                          sort=sort)
 
 # API lấy số lượng sản phẩm trong giỏ hàng
 @marketplace_bp.route('/cart/count')
 def get_cart_count():
     # Nếu chưa đăng nhập, trả về 0
-    if 'user_id' not in session:
+    if not current_user.is_authenticated:
         return jsonify({'success': True, 'count': 0})
 
     # Lấy giỏ hàng của người dùng
-    cart = Cart.query.filter_by(user_id=session['user_id']).first()
+    cart = Cart.query.filter_by(user_id=current_user.id).first()
 
     # Nếu chưa có giỏ hàng, trả về 0
     if not cart:
@@ -88,12 +88,8 @@ def get_cart_count():
 # API thêm sản phẩm vào giỏ hàng
 @marketplace_bp.route('/cart/add', methods=['POST'])
 @csrf.exempt
+@login_required
 def add_to_cart():
-    # CSRF token được gửi trong header X-CSRFToken
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'message': 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.'}), 401
-
     # Lấy dữ liệu từ request
     data = request.get_json()
     product_id = data.get('product_id')
@@ -112,9 +108,9 @@ def add_to_cart():
             return jsonify({'success': False, 'message': 'Lô hàng không hợp lệ.'}), 404
 
     # Lấy hoặc tạo giỏ hàng cho người dùng
-    cart = Cart.query.filter_by(user_id=session['user_id']).first()
+    cart = Cart.query.filter_by(user_id=current_user.id).first()
     if not cart:
-        cart = Cart(user_id=session['user_id'])
+        cart = Cart(user_id=current_user.id)
         db.session.add(cart)
         db.session.commit()
 
@@ -151,17 +147,13 @@ def add_to_cart():
 
 # API xem giỏ hàng
 @marketplace_bp.route('/cart')
+@login_required
 def cart():
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xem giỏ hàng.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy giỏ hàng của người dùng
-    cart = Cart.query.filter_by(user_id=session['user_id']).first()
+    cart = Cart.query.filter_by(user_id=current_user.id).first()
 
     if not cart:
-        cart = Cart(user_id=session['user_id'])
+        cart = Cart(user_id=current_user.id)
         db.session.add(cart)
         db.session.commit()
 
@@ -181,12 +173,8 @@ def cart():
 # API cập nhật giỏ hàng
 @marketplace_bp.route('/cart/update', methods=['POST'])
 @csrf.exempt
+@login_required
 def update_cart():
-    # CSRF token được gửi trong header X-CSRFToken
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'message': 'Vui lòng đăng nhập để cập nhật giỏ hàng.'}), 401
-
     # Lấy dữ liệu từ request
     data = request.get_json()
     item_id = data.get('item_id')
@@ -199,7 +187,7 @@ def update_cart():
 
     # Kiểm tra quyền truy cập
     cart = Cart.query.get(cart_item.cart_id)
-    if cart.user_id != session['user_id']:
+    if cart.user_id != current_user.id:
         return jsonify({'success': False, 'message': 'Bạn không có quyền cập nhật giỏ hàng này.'}), 403
 
     try:
@@ -228,21 +216,17 @@ def update_cart():
 
 # API tạo đơn hàng mới
 @marketplace_bp.route('/checkout', methods=['GET', 'POST'])
+@login_required
 def checkout():
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để thanh toán.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy giỏ hàng của người dùng
-    cart = Cart.query.filter_by(user_id=session['user_id']).first()
+    cart = Cart.query.filter_by(user_id=current_user.id).first()
 
     if not cart or not cart.cart_items:
         flash('Giỏ hàng của bạn đang trống.', 'error')
         return redirect(url_for('marketplace.cart'))
 
     # Lấy thông tin người dùng
-    user = User.query.get(session['user_id'])
+    user = current_user
 
     if request.method == 'POST':
         # Lấy dữ liệu từ form
@@ -262,7 +246,7 @@ def checkout():
 
         # Tạo đơn hàng mới
         order = Order(
-            buyer_id=session['user_id'],
+            buyer_id=current_user.id,
             batch_id=None,  # Sẽ được cập nhật sau
             quantity=1,  # Sẽ được cập nhật sau
             total_price=total_amount,
@@ -328,19 +312,15 @@ def checkout():
 
 # API danh sách đơn hàng
 @marketplace_bp.route('/orders')
+@login_required
 def orders():
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xem đơn hàng.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy các tham số tìm kiếm và lọc
     status = request.args.get('status', '')
     page = request.args.get('page', 1, type=int)
     per_page = 10  # Số đơn hàng trên mỗi trang
 
     # Lấy đơn hàng của người dùng
-    query = Order.query.filter_by(buyer_id=session['user_id'])
+    query = Order.query.filter_by(buyer_id=current_user.id)
 
     # Lọc theo trạng thái
     if status:
@@ -361,17 +341,13 @@ def orders():
 
 # API chi tiết đơn hàng
 @marketplace_bp.route('/orders/<int:id>')
+@login_required
 def order_detail(id):
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xem chi tiết đơn hàng.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy thông tin đơn hàng
     order = Order.query.get_or_404(id)
 
     # Kiểm tra quyền truy cập
-    if order.buyer_id != session['user_id'] and session.get('user_role') != 'admin':
+    if order.buyer_id != current_user.id and not current_user.is_admin:
         flash('Bạn không có quyền xem đơn hàng này.', 'error')
         return redirect(url_for('marketplace.orders'))
 
@@ -398,13 +374,10 @@ def order_detail(id):
 
 # API cập nhật trạng thái đơn hàng
 @marketplace_bp.route('/orders/<int:id>/update-status', methods=['POST'])
+@login_required
 def update_order_status(id):
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'message': 'Vui lòng đăng nhập để cập nhật đơn hàng.'}), 401
-
     # Kiểm tra quyền truy cập (chỉ admin hoặc người bán mới có thể cập nhật trạng thái)
-    if session.get('user_role') not in ['admin', 'farmer']:
+    if not current_user.is_admin and current_user.role != 'farmer':
         return jsonify({'success': False, 'message': 'Bạn không có quyền cập nhật trạng thái đơn hàng.'}), 403
 
     # Lấy thông tin đơn hàng
@@ -434,13 +407,10 @@ def update_order_status(id):
 
 # API tạo đơn hàng qua AJAX (cho thanh toán online)
 @marketplace_bp.route('/create-order', methods=['POST'])
+@login_required
 def create_order():
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'message': 'Vui lòng đăng nhập để thanh toán.'}), 401
-
     # Lấy giỏ hàng của người dùng
-    cart = Cart.query.filter_by(user_id=session['user_id']).first()
+    cart = Cart.query.filter_by(user_id=current_user.id).first()
 
     if not cart or not cart.cart_items:
         return jsonify({'success': False, 'message': 'Giỏ hàng của bạn đang trống.'}), 400
@@ -462,7 +432,7 @@ def create_order():
 
         # Tạo đơn hàng mới
         order = Order(
-            buyer_id=session['user_id'],
+            buyer_id=current_user.id,
             batch_id=None,  # Sẽ được cập nhật sau
             quantity=1,  # Sẽ được cập nhật sau
             total_price=total_amount,
@@ -509,7 +479,7 @@ def create_order():
         # Tạo bản ghi thanh toán
         payment = Payment(
             order_id=order.id,
-            user_id=session['user_id'],
+            user_id=current_user.id,
             amount=float(total_amount),
             payment_method=payment_method,
             status='pending'
@@ -535,11 +505,8 @@ def create_order():
 # API xử lý thanh toán online
 @marketplace_bp.route('/process-payment', methods=['POST'])
 @csrf.exempt
+@login_required
 def process_payment():
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'message': 'Vui lòng đăng nhập để thanh toán.'}), 401
-
     # Lấy dữ liệu từ request
     data = request.get_json()
     order_id = data.get('order_id')
@@ -558,7 +525,7 @@ def process_payment():
         return jsonify({'success': False, 'message': 'Đơn hàng không tồn tại.'}), 404
 
     # Kiểm tra quyền truy cập
-    if order.buyer_id != session['user_id']:
+    if order.buyer_id != current_user.id:
         return jsonify({'success': False, 'message': 'Bạn không có quyền thanh toán đơn hàng này.'}), 403
 
     try:
@@ -650,6 +617,7 @@ def payment_callback():
 
 # Trang thanh toán thành công
 @marketplace_bp.route('/payment/success')
+@login_required
 def payment_success():
     # Log tất cả các tham số nhận được
     current_app.logger.info(f"Payment success page accessed with params: {request.args}")
@@ -659,19 +627,12 @@ def payment_success():
     transaction_id = request.args.get('vnp_BankTranNo')
     status = request.args.get('status', 'success')  # Mặc định là success vì đây là trang thành công
 
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xem thông tin thanh toán.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Nếu có mã đơn hàng, cập nhật trạng thái thanh toán
     if order_id:
         try:
             # Cập nhật trạng thái thanh toán
             payment = Payment.query.filter_by(order_id=order_id).first()
             if payment:
-                # if transaction_id:
-                #     payment.transaction_id = transaction_id
                 payment.transaction_id = transaction_id
                 payment.status = 'completed'
 
@@ -697,6 +658,7 @@ def payment_success():
 
 # Trang thanh toán thất bại
 @marketplace_bp.route('/payment/failure')
+@login_required
 def payment_failure():
     # Log tất cả các tham số nhận được
     current_app.logger.info(f"Payment failure page accessed with params: {request.args}")
@@ -709,11 +671,6 @@ def payment_failure():
 
     # Mặc định message lỗi
     error_message = message or 'Có lỗi xảy ra trong quá trình thanh toán.'
-
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xem thông tin thanh toán.', 'error')
-        return redirect(url_for('auth.login'))
 
     # Nếu có mã đơn hàng, cập nhật trạng thái thanh toán
     if order_id:

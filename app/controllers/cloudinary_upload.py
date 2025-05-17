@@ -1,6 +1,7 @@
 import cloudinary
 import cloudinary.uploader
 from flask import Blueprint, request, render_template_string
+from flask_login import login_required
 
 cloudinary.config(
   cloud_name = 'dzudbjijz',
@@ -26,6 +27,7 @@ UPLOAD_FORM = '''
 '''
 
 @cloudinary_bp.route('/cloudinary-upload', methods=['GET', 'POST'])
+@login_required
 def upload():
     url = None
     if request.method == 'POST':

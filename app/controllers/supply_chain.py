@@ -7,16 +7,13 @@ from app.models.user import User
 from app.models.supply_chain_step import SupplyChainStep
 from app.models.blockchain_transaction import BlockchainTransaction
 from datetime import datetime
+from flask_login import login_required, current_user
 
 supply_chain_bp = Blueprint('supply_chain', __name__)
 
 @supply_chain_bp.route('/')
+@login_required
 def index():
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xem danh sách chuỗi cung ứng.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy các tham số tìm kiếm và lọc
     batch_id = request.args.get('batch_id', '')
     step_name = request.args.get('step_name', '')
@@ -28,9 +25,9 @@ def index():
     query = SupplyChainStep.query
 
     # Nếu là nông dân, chỉ hiển thị các bước của lô hàng của họ
-    if session.get('user_role') == 'farmer':
+    if current_user.role == 'farmer':
         # Lấy tất cả sản phẩm của nông dân
-        farmer_products = Product.query.filter_by(user_id=session['user_id']).all()
+        farmer_products = Product.query.filter_by(user_id=current_user.id).all()
         farmer_product_ids = [product.id for product in farmer_products]
 
         # Lấy tất cả lô hàng của các sản phẩm đó
@@ -64,7 +61,7 @@ def index():
         step.batch.product = Product.query.get(step.batch.product_id)
 
     # Lấy danh sách lô hàng cho dropdown lọc
-    if session.get('user_role') == 'farmer':
+    if current_user.role == 'farmer':
         batches = Batch.query.filter(Batch.product_id.in_(farmer_product_ids)).all()
     else:
         batches = Batch.query.all()
@@ -83,12 +80,8 @@ def index():
                           sort=sort)
 
 @supply_chain_bp.route('/create', methods=['GET', 'POST'])
+@login_required
 def create():
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để thêm bước chuỗi cung ứng.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy batch_id từ query parameter
     batch_id = request.args.get('batch_id')
     if not batch_id:
@@ -102,7 +95,7 @@ def create():
     batch.product = Product.query.get(batch.product_id)
 
     # Kiểm tra quyền truy cập
-    if batch.product.user_id != session['user_id']:
+    if batch.product.user_id != current_user.id:
         flash('Bạn không có quyền thêm bước chuỗi cung ứng cho lô hàng này.', 'error')
         return redirect(url_for('batches.show', id=batch_id))
 
@@ -123,7 +116,7 @@ def create():
             step_name=step_name,
             description=description,
             location=location,
-            handler_id=session['user_id'],
+            handler_id=current_user.id,
             timestamp=datetime.utcnow()
         )
 
@@ -142,12 +135,8 @@ def create():
                           batch=batch)
 
 @supply_chain_bp.route('/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit(id):
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để chỉnh sửa bước chuỗi cung ứng.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy thông tin bước chuỗi cung ứng
     step = SupplyChainStep.query.get_or_404(id)
 
@@ -158,7 +147,7 @@ def edit(id):
     batch.product = Product.query.get(batch.product_id)
 
     # Kiểm tra quyền truy cập
-    if step.handler_id != session['user_id']:
+    if step.handler_id != current_user.id:
         flash('Bạn không có quyền chỉnh sửa bước chuỗi cung ứng này.', 'error')
         return redirect(url_for('batches.show', id=step.batch_id))
 
@@ -193,17 +182,13 @@ def edit(id):
                           batch=batch)
 
 @supply_chain_bp.route('/<int:id>/delete', methods=['POST'])
+@login_required
 def delete(id):
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xóa bước chuỗi cung ứng.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy thông tin bước chuỗi cung ứng
     step = SupplyChainStep.query.get_or_404(id)
 
     # Kiểm tra quyền truy cập
-    if step.handler_id != session['user_id']:
+    if step.handler_id != current_user.id:
         flash('Bạn không có quyền xóa bước chuỗi cung ứng này.', 'error')
         return redirect(url_for('batches.show', id=step.batch_id))
 
@@ -220,12 +205,8 @@ def delete(id):
     return redirect(url_for('batches.show', id=batch_id))
 
 @supply_chain_bp.route('/<int:id>/verify', methods=['GET'])
+@login_required
 def verify_blockchain(id):
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xác thực thông tin trên Blockchain.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy thông tin bước chuỗi cung ứng
     step = SupplyChainStep.query.get_or_404(id)
 
@@ -294,17 +275,13 @@ def verify_blockchain(id):
                           blockchain_data=blockchain_data)
 
 @supply_chain_bp.route('/<int:id>/verify', methods=['POST'])
+@login_required
 def verify_blockchain_submit(id):
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xác thực thông tin trên Blockchain.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy thông tin bước chuỗi cung ứng
     step = SupplyChainStep.query.get_or_404(id)
 
     # Kiểm tra quyền truy cập
-    if step.handler_id != session['user_id']:
+    if step.handler_id != current_user.id:
         flash('Bạn không có quyền xác thực bước chuỗi cung ứng này trên Blockchain.', 'error')
         return redirect(url_for('supply_chain.verify_blockchain', id=id))
 

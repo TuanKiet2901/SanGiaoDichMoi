@@ -4,21 +4,19 @@ from app.models.order import Order
 from app.models.payment import Payment, vnpay_create_payment_url
 from datetime import datetime
 import uuid
+from flask_login import login_required, current_user
 
 payment_bp = Blueprint('payment', __name__)
 
 # API tạo giao dịch thanh toán
 @payment_bp.route('/create/<int:order_id>', methods=['POST'])
+@login_required
 def create_payment(order_id):
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'message': 'Vui lòng đăng nhập để thanh toán.'}), 401
-
     # Lấy thông tin đơn hàng
     order = Order.query.get_or_404(order_id)
 
     # Kiểm tra quyền truy cập
-    if order.buyer_id != session['user_id']:
+    if order.buyer_id != current_user.id:
         return jsonify({'success': False, 'message': 'Bạn không có quyền thanh toán đơn hàng này.'}), 403
 
     # Kiểm tra trạng thái đơn hàng
@@ -40,7 +38,7 @@ def create_payment(order_id):
         # Tạo giao dịch thanh toán mới
         payment = Payment(
             order_id=order_id,
-            user_id=session['user_id'],
+            user_id=current_user.id,
             amount=float(order.total_price),
             payment_method=payment_method,
             transaction_id=transaction_id,
@@ -103,16 +101,13 @@ def create_payment(order_id):
 
 # API cập nhật trạng thái thanh toán
 @payment_bp.route('/update/<int:payment_id>', methods=['POST'])
+@login_required
 def update_payment(payment_id):
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'message': 'Vui lòng đăng nhập để cập nhật thanh toán.'}), 401
-
     # Lấy thông tin giao dịch thanh toán
     payment = Payment.query.get_or_404(payment_id)
 
     # Kiểm tra quyền truy cập (chỉ người dùng hoặc admin mới có thể cập nhật)
-    if payment.user_id != session['user_id'] and session.get('user_role') != 'admin':
+    if payment.user_id != current_user.id and not current_user.is_admin:
         return jsonify({'success': False, 'message': 'Bạn không có quyền cập nhật giao dịch này.'}), 403
 
     # Lấy dữ liệu từ request
@@ -169,19 +164,15 @@ def update_payment(payment_id):
 
 # API xem lịch sử thanh toán
 @payment_bp.route('/history')
+@login_required
 def payment_history():
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xem lịch sử thanh toán.', 'error')
-        return redirect(url_for('auth.login'))
-
     # Lấy các tham số tìm kiếm và lọc
     status = request.args.get('status', '')
     page = request.args.get('page', 1, type=int)
     per_page = 10  # Số giao dịch trên mỗi trang
 
     # Lấy giao dịch thanh toán của người dùng
-    query = Payment.query.filter_by(user_id=session['user_id'])
+    query = Payment.query.filter_by(user_id=current_user.id)
 
     # Lọc theo trạng thái
     if status:

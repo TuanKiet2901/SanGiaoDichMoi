@@ -8,7 +8,7 @@ from itsdangerous import URLSafeTimedSerializer
 import os
 from flask_mail import Message
 from app import mail
-from flask_login import login_user
+from flask_login import login_user, logout_user, login_required, current_user
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -108,24 +108,16 @@ def register():
     return render_template('auth/register.html', title='Đăng ký')
 
 @auth_bp.route('/logout')
+@login_required
 def logout():
-    # Xóa thông tin user khỏi session
-    session.pop('user_id', None)
-    session.pop('user_name', None)
-    session.pop('user_email', None)
-    session.pop('user_role', None)
-
+    logout_user()
     flash('Bạn đã đăng xuất thành công!', 'success')
     return redirect(url_for('main.index'))
 
 @auth_bp.route('/profile', methods=['GET', 'POST'])
+@login_required
 def profile():
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xem trang này.', 'error')
-        return redirect(url_for('auth.login'))
-
-    user = User.query.get(session['user_id'])
+    user = current_user
     if not user:
         flash('Không tìm thấy thông tin người dùng.', 'error')
         return redirect(url_for('main.index'))
@@ -138,8 +130,6 @@ def profile():
 
         try:
             db.session.commit()
-            # Cập nhật lại session
-            session['user_name'] = user.name
             flash('Thông tin tài khoản đã được cập nhật!', 'success')
         except Exception as e:
             db.session.rollback()
@@ -156,13 +146,9 @@ def profile():
     return render_template('auth/profile.html', title='Thông tin tài khoản', user=user, products=products, orders=orders)
 
 @auth_bp.route('/change-password', methods=['GET', 'POST'])
+@login_required
 def change_password():
-    # Kiểm tra đã đăng nhập chưa
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xem trang này.', 'error')
-        return redirect(url_for('auth.login'))
-
-    user = User.query.get(session['user_id'])
+    user = current_user
     if not user:
         flash('Không tìm thấy thông tin người dùng.', 'error')
         return redirect(url_for('main.index'))
