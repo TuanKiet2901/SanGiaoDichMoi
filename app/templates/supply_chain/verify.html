@@ -99,7 +99,7 @@
         <div class="bg-gray-50 p-4 rounded-lg">
             <p class="text-gray-600 mb-4">Bước chuỗi cung ứng này chưa được xác thực trên Blockchain.</p>
 
-            {% if session.get('user_id') == step.handler_id %}
+            {% if current_user.id == step.handler_id %}
             <form method="POST" action="{{ url_for('supply_chain.verify_blockchain_submit', id=step.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 transition duration-200">

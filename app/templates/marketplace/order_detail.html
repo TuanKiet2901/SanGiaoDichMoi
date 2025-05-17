@@ -192,7 +192,7 @@
                         </div>
                         {% endif %}
 
-                        {% if order.status == 'pending' and session.get('user_role') in ['admin', 'farmer'] %}
+                        {% if order.status == 'pending' and current_user.is_authenticated and current_user.role in ['admin', 'farmer'] %}
                         <div class="mt-6 flex justify-end space-x-4">
                             <button id="confirm-order-btn" class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200" data-order-id="{{ order.id }}">
                                 Xác nhận đơn hàng

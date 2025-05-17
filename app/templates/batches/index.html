@@ -8,7 +8,7 @@
         <h1 class="text-2xl font-bold text-green-700">Danh sách lô hàng</h1>
         
         <div class="flex space-x-4">
-            {% if session.get('user_role') == 'farmer' %}
+            {% if current_user.is_authenticated and current_user.role == 'farmer' %}
             <a href="{{ url_for('batches.create') }}" class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200">
                 Thêm lô hàng mới
             </a>
@@ -148,7 +148,7 @@
                         <a href="{{ url_for('batches.show', id=batch.id) }}" class="text-blue-600 hover:text-blue-900 mr-3">
                             Chi tiết
                         </a>
-                        {% if session.get('user_id') == batch.product.user_id %}
+                        {% if current_user.is_authenticated and current_user.id == batch.product.user_id %}
                         <a href="{{ url_for('batches.edit', id=batch.id) }}" class="text-yellow-600 hover:text-yellow-900">
                             Sửa
                         </a>
@@ -216,7 +216,7 @@
         <h2 class="text-xl font-bold text-gray-700 mb-2">Không tìm thấy lô hàng nào</h2>
         <p class="text-gray-600 mb-4">Không có lô hàng nào phù hợp với tiêu chí tìm kiếm của bạn.</p>
         
-        {% if session.get('user_role') == 'farmer' %}
+        {% if current_user.is_authenticated and current_user.role == 'farmer' %}
         <a href="{{ url_for('batches.create') }}" class="inline-block bg-green-600 text-white py-2 px-6 rounded-lg hover:bg-green-700 transition duration-200">
             Thêm lô hàng mới
         </a>
