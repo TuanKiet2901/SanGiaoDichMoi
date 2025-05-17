@@ -8,6 +8,7 @@ from itsdangerous import URLSafeTimedSerializer
 import os
 from flask_mail import Message
 from app import mail
+from flask_login import login_user
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -49,11 +50,8 @@ def login():
             flash('Email hoặc mật khẩu không đúng. Vui lòng thử lại.', 'error')
             return redirect(url_for('auth.login'))
 
-        # Lưu thông tin user vào session
-        session['user_id'] = user.id
-        session['user_name'] = user.name
-        session['user_email'] = user.email
-        session['user_role'] = user.role
+        # Đăng nhập user bằng Flask-Login
+        login_user(user, remember=remember)
 
         flash('Bạn đã đăng nhập thành công!', 'success')
         return redirect(url_for('main.index'))
