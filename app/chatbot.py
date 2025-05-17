@@ -108,9 +108,9 @@ class Chatbot:
                         "response": "Xin chào! Tôi có thể giúp gì cho bạn hôm nay?"
                     })
 
-                # 2. Xử lý 'công thức khác' (ưu tiên kiểm tra trước)
+                # 2. Xử lý "công thức khác" (ĐƯA LÊN TRƯỚC)
                 if user_input_norm in ['cong-thuc-khac', 'cong-thuc-khac-nua', 'cong-thuc-khac-di']:
-                    if self.last_recipe_list:
+                    if hasattr(self, 'last_recipe_list') and self.last_recipe_list:
                         self.last_recipe_index += 1
                         if self.last_recipe_index < len(self.last_recipe_list):
                             recipe = self.last_recipe_list[self.last_recipe_index]
@@ -129,8 +129,9 @@ class Chatbot:
                             "response": "Bạn hãy hỏi về một sản phẩm trước nhé!"
                         })
 
-                # Nếu user nhắn 'có' và vừa hỏi sản phẩm:
+                # Nếu user nhắn "có" và vừa hỏi sản phẩm:
                 if user_input_norm in ['co', 'có']:
+                    # Lấy tên sản phẩm từ request hoặc từ self.last_product_name
                     product_name = None
                     if request.json and 'product_name' in request.json:
                         product_name = request.json['product_name']
@@ -138,25 +139,7 @@ class Chatbot:
                         product_name = self.last_product_name
                     if product_name:
                         name_norm = normalize_name(product_name)
-                        # Ưu tiên lấy danh sách công thức nếu có
-                        mon_an = []
-                        if 'cachua' in name_norm:
-                            mon_an = [
-                                RECIPE_MAP['canhcachuatrung'],
-                                RECIPE_MAP['sotcachua'],
-                                RECIPE_MAP['saladcachua'],
-                                RECIPE_MAP['pizza_cachua'],
-                                RECIPE_MAP['nuocepcachua']
-                            ]
-                        # ... các sản phẩm khác ...
-                        if mon_an:
-                            self.last_recipe_list = mon_an
-                            self.last_recipe_index = 0
-                            return jsonify({
-                                "type": "text",
-                                "response": mon_an[0]
-                            })
-                        # Nếu không có danh sách thì fallback như cũ
+                        # Ưu tiên lấy công thức từ RECIPE_MAP
                         recipe_key = None
                         for key in RECIPE_MAP:
                             if key in name_norm:
@@ -210,9 +193,121 @@ class Chatbot:
                 # Xử lý câu hỏi về sản phẩm
                 if found_product:
                     self.last_product_name = found_product.name
-                    name_norm = normalize_name(found_product.name)
                     response = f"Kết quả cho sản phẩm {found_product.name}:"
-                    # Tìm 'công thức' cho sản phẩm
+                    # Tìm "trên", "dưới", "từ ... đến ..." liên quan giá
+                    price_min, price_max = None, None
+                    # từ ... đến ...
+                    range_match = re.search(r'tu\s*(\d+)[^\d]+den[^\d]+(\d+)', user_input_norm)
+                    if range_match:
+                        price_min = int(range_match.group(1))
+                        price_max = int(range_match.group(2))
+                    else:
+                        # trên
+                        above_match = re.search(r'tren[^\d]*(\d+)', user_input_norm)
+                        if above_match:
+                            price_min = int(above_match.group(1))
+                        # dưới
+                        below_match = re.search(r'duoi[^\d]*(\d+)', user_input_norm)
+                        if below_match:
+                            price_max = int(below_match.group(1))
+                        # giá ...
+                        price_match = re.search(r'gia[^\d]*(\d+)', user_input_norm)
+                        if price_match:
+                            price_max = int(price_match.group(1))
+                    
+                    # Lọc sản phẩm theo tên và giá
+                    filtered = []
+                    for p in products:
+                        if strip_accents(p.name) != strip_accents(found_product.name):
+                            continue
+                        if price_min and p.price < price_min:
+                            continue
+                        if price_max and p.price > price_max:
+                            continue
+                        available_quantity = p.get_available_quantity()
+                        filtered.append({
+                            "id": p.id,
+                            "name": p.name,
+                            "price": p.price,
+                            "description": p.description,
+                            "image_url": p.image_url,
+                            "status": "Còn hàng" if available_quantity > 0 else "Hết hàng",
+                            "available_quantity": available_quantity,
+                            "category": p.category
+                        })
+                    if filtered:
+                        return jsonify({
+                            "type": "products",
+                            "response": response,
+                            "products": filtered,
+                            "follow_up": f"Bạn có muốn tham khảo một số món từ sản phẩm {found_product.name} không? (Trả lời 'có' để xem gợi ý món ăn)"
+                        })
+                    else:
+                        return jsonify({
+                            "type": "text",
+                            "response": f"Không tìm thấy sản phẩm {found_product.name} phù hợp với yêu cầu giá."
+                        })
+
+                # Xử lý lọc theo khoảng giá
+                price_min, price_max = None, None
+                range_match = re.search(r'(?:gia|tu)?\s*(\d+)[^\d]+(\d+)', user_input_norm)
+                if range_match:
+                    price_min = int(range_match.group(1))
+                    price_max = int(range_match.group(2))
+                else:
+                    below_match = re.search(r'(?:gia)?[^\d]*duoi[^\d]*(\d+)', user_input_norm)
+                    if below_match:
+                        price_max = int(below_match.group(1))
+                    else:
+                        above_match = re.search(r'(?:gia)?[^\d]*tren[^\d]*(\d+)', user_input_norm)
+                        if above_match:
+                            price_min = int(above_match.group(1))
+                        else:
+                            price_match = re.search(r'(\d+)', user_input_norm)
+                            if price_match:
+                                price_max = int(price_match.group(1))
+
+                # Lọc sản phẩm theo giá và danh mục
+                for p in products:
+                    available_quantity = p.get_available_quantity()
+                    # Lọc theo loại hàng
+                    if found_category and (not p.category or strip_accents(p.category) != found_category):
+                        continue
+                    # Lọc theo khoảng giá
+                    if price_min and p.price < price_min:
+                        continue
+                    if price_max and p.price > price_max:
+                        continue
+                    product_list.append({
+                        "id": p.id,
+                        "name": p.name,
+                        "price": p.price,
+                        "description": p.description,
+                        "image_url": p.image_url,
+                        "status": "Còn hàng" if available_quantity > 0 else "Hết hàng",
+                        "available_quantity": available_quantity,
+                        "category": p.category
+                    })
+
+                # Trả về kết quả sản phẩm nếu có
+                if product_list:
+                    return jsonify({
+                        "type": "products",
+                        "response": "Các sản phẩm bạn có thể quan tâm là:",
+                        "products": product_list
+                    })
+                # Nếu không có kết quả sản phẩm và không phải câu hỏi thực tế về cửa hàng
+                else:
+                    # Sử dụng OpenAI để trả lời các câu hỏi chung
+                    chat_response = self.get_chat_response(user_message)
+                    return jsonify({
+                        "type": "text",
+                        "response": chat_response
+                    })
+
+                # Khi trả về công thức đầu tiên cho sản phẩm:
+                if found_product:
+                    # ... lấy danh sách công thức cho sản phẩm ...
                     mon_an = []
                     if 'cachua' in name_norm:
                         mon_an = [
@@ -230,8 +325,6 @@ class Chatbot:
                             "type": "text",
                             "response": mon_an[0]
                         })
-                    # Nếu không có danh sách thì fallback như cũ
-                    # ... giữ nguyên các xử lý lọc sản phẩm, giá ...
 
         except Exception as e:
             import traceback
