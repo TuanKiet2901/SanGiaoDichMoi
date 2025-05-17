@@ -109,33 +109,24 @@ class Chatbot:
                 # Nếu user nhắn "có" và vừa hỏi sản phẩm:
                 if user_input_norm in ['co', 'có'] and self.last_product_name:
                     name_norm = normalize_name(self.last_product_name)
-                    mon_an = []
-                    if 'cachua' in name_norm:
-                        mon_an = [
-                            'Canh cà chua trứng',
-                            'Sốt cà chua',
-                            'Salad cà chua',
-                            'Cà chua nhồi thịt',
-                            'Nước ép cà chua'
-                        ]
-                    elif 'dautay' in name_norm:
-                        mon_an = [
-                            'Sinh tố dâu tây',
-                            'Bánh mousse dâu tây',
-                            'Mứt dâu tây',
-                            'Sữa chua dâu tây',
-                            'Dâu tây chấm sữa đặc'
-                        ]
-                    if mon_an:
-                        return jsonify({
-                            "type": "text",
-                            "response": f"Một số món ăn từ {self.last_product_name} bạn có thể tham khảo: " + ', '.join(mon_an)
-                        })
+                    # Ưu tiên lấy công thức từ RECIPE_MAP
+                    recipe_key = None
+                    for key in RECIPE_MAP:
+                        if key in name_norm:
+                            recipe_key = key
+                            break
+                    if recipe_key:
+                        recipe = RECIPE_MAP[recipe_key]
                     else:
-                        return jsonify({
-                            "type": "text",
-                            "response": f"Bạn có thể chế biến nhiều món ăn từ {self.last_product_name} như: xào, luộc, nấu canh, làm salad..."
-                        })
+                        # Nếu không có trong RECIPE_MAP, dùng OpenAI để sinh công thức
+                        prompt = f"Hãy viết công thức chi tiết cho món ăn từ '{self.last_product_name}' bằng tiếng Việt, gồm nguyên liệu và các bước thực hiện."
+                        recipe = self.get_chat_response(prompt)
+                    # Reset lại last_product_name để tránh lặp
+                    self.last_product_name = None
+                    return jsonify({
+                        "type": "text",
+                        "response": recipe
+                    })
 
                 # Nếu user nhắn tên món ăn (không cần kiểm tra RECIPE_MAP nữa)
                 if self.is_dish_name(user_message):
