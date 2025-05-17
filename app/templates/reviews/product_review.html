@@ -95,7 +95,7 @@
                         <span class="text-gray-600 text-sm">{{ avg_rating }} ({{ reviews|length }} đánh giá)</span>
                     </div>
                     
-                    <a href="{{ url_for('products.detail', id=product.id) }}" class="text-blue-600 hover:text-blue-800 text-sm">
+                    <a href="{{ url_for('products.show', id=product.id) }}" class="text-blue-600 hover:text-blue-800 text-sm">
                         Xem chi tiết sản phẩm
                     </a>
                 </div>
