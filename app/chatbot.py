@@ -35,6 +35,8 @@ class Chatbot:
         self.conversation_history = []
         self.last_clear_time = datetime.now()
         self.last_product_name = None
+        self.last_recipe_list = []
+        self.last_recipe_index = 0
 
     def is_dish_name(self, text):
         """Kiểm tra xem text có phải là tên món ăn không"""
@@ -180,7 +182,7 @@ class Chatbot:
                         price_max = int(range_match.group(2))
                     else:
                         # trên
-                        above_match = re.search(r'tren[^\d]*(\d+)', user_input_norm)
+                        above_match = re.search(r'tren[^\d]*(\d+)', user_input_input_norm)
                         if above_match:
                             price_min = int(above_match.group(1))
                         # dưới
@@ -281,6 +283,48 @@ class Chatbot:
                         "type": "text",
                         "response": chat_response
                     })
+
+                # Nếu user nhắn "công thức khác"
+                if user_input_norm in ['cong-thuc-khac', 'cong-thuc-khac-nua', 'cong-thuc-khac-di']:
+                    if hasattr(self, 'last_recipe_list') and self.last_recipe_list:
+                        self.last_recipe_index += 1
+                        if self.last_recipe_index < len(self.last_recipe_list):
+                            recipe = self.last_recipe_list[self.last_recipe_index]
+                            return jsonify({
+                                "type": "text",
+                                "response": recipe
+                            })
+                        else:
+                            return jsonify({
+                                "type": "text",
+                                "response": "Đã hết công thức gợi ý cho sản phẩm này!"
+                            })
+                    else:
+                        return jsonify({
+                            "type": "text",
+                            "response": "Bạn hãy hỏi về một sản phẩm trước nhé!"
+                        })
+
+                # Khi trả về công thức đầu tiên cho sản phẩm:
+                if found_product:
+                    # ... lấy danh sách công thức cho sản phẩm ...
+                    mon_an = []
+                    if 'cachua' in name_norm:
+                        mon_an = [
+                            RECIPE_MAP['canhcachuatrung'],
+                            RECIPE_MAP['sotcachua'],
+                            RECIPE_MAP['saladcachua'],
+                            RECIPE_MAP['pizza_cachua'],
+                            RECIPE_MAP['nuocepcachua']
+                        ]
+                    # ... các sản phẩm khác ...
+                    if mon_an:
+                        self.last_recipe_list = mon_an
+                        self.last_recipe_index = 0
+                        return jsonify({
+                            "type": "text",
+                            "response": mon_an[0]
+                        })
 
         except Exception as e:
             import traceback
