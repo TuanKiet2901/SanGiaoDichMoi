@@ -10,6 +10,16 @@ from flask_login import current_user, login_required
 from app import db
 from app.models.chat_history import ChatHistory
 import json
+from decimal import Decimal
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super(DecimalEncoder, self).default(obj)
+
+# Override the default JSON encoder
+json.JSONEncoder = DecimalEncoder
 
 RECIPE_MAP = {
     'mutdautay': "Nguyên liệu: 1kg dâu tây, 600g đường, 1 quả chanh.\nCách làm: Rửa sạch dâu tây, cắt cuống, để ráo. Ướp dâu với đường trong 3-4 tiếng cho tan đường. Bắc lên bếp đun nhỏ lửa, vớt bọt, đảo nhẹ tay. Khi dâu trong, nước sánh lại thì vắt nước cốt chanh vào, đun thêm 5 phút rồi tắt bếp. Để nguội, cho vào hũ kín bảo quản trong tủ lạnh.",
@@ -242,7 +252,7 @@ class Chatbot:
                         filtered.append({
                             "id": p.id,
                             "name": p.name,
-                            "price": p.price,
+                            "price": float(p.price) if p.price is not None else None,
                             "description": p.description,
                             "image_url": p.image_url,
                             "status": "Còn hàng" if available_quantity > 0 else "Hết hàng",
@@ -305,7 +315,7 @@ class Chatbot:
                     product_list.append({
                         "id": p.id,
                         "name": p.name,
-                        "price": p.price,
+                        "price": float(p.price) if p.price is not None else None,
                         "description": p.description,
                         "image_url": p.image_url,
                         "status": "Còn hàng" if available_quantity > 0 else "Hết hàng",
