@@ -17,6 +17,12 @@ csrf = CSRFProtect()
 mail = Mail()
 login_manager = LoginManager()
 
+from app.models.user import User
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 def create_app():
     app = Flask(__name__)
 
