@@ -119,12 +119,12 @@ function updateOrderStatus(orderId, status) {
         if (data.success) {
             showAlert(data.message, 'success');
             setTimeout(() => window.location.reload(), 1000);
-        } else {
-            showAlert(data.message || 'Có lỗi xảy ra khi cập nhật trạng thái đơn hàng.', 'error');
         }
     })
     .catch(error => {
-        showAlert('Có lỗi xảy ra khi cập nhật trạng thái đơn hàng.', 'error');
+        // KHÔNG làm gì khi lỗi, không hiện popup
+        // Nếu muốn vẫn log ra console để debug, giữ dòng sau:
+        // console.error('Có lỗi xảy ra khi cập nhật trạng thái đơn hàng.', error);
     });
 }
 
