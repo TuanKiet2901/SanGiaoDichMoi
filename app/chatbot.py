@@ -356,7 +356,7 @@ class Chatbot:
 
 chat_api = Blueprint('chat_api', __name__)
 
-@chat_api.route('/chat/api/history', methods=['GET'])
+@chat_api.route('/api/history', methods=['GET'])
 @login_required
 def get_chat_history():
     """Lấy lịch sử chat của user hiện tại"""
@@ -374,7 +374,7 @@ def get_chat_history():
             'error': 'Không thể lấy lịch sử chat'
         })
 
-@chat_api.route('/chat/api/chat', methods=['POST'])
+@chat_api.route('/api/chat', methods=['POST'])
 @login_required
 def chat():
     try:
