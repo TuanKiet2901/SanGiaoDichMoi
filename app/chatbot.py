@@ -68,7 +68,7 @@ class Chatbot:
                     *self.conversation_history
                 ],
                 temperature=0.7,
-                max_tokens=150
+                max_tokens=1200
             )
             
             # Lấy câu trả lời từ API
