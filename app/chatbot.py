@@ -6,6 +6,20 @@ import re
 import unicodedata
 from datetime import datetime, timedelta
 
+RECIPE_MAP = {
+    'mutdautay': "Nguyên liệu: 1kg dâu tây, 600g đường, 1 quả chanh.\nCách làm: Rửa sạch dâu tây, cắt cuống, để ráo. Ướp dâu với đường trong 3-4 tiếng cho tan đường. Bắc lên bếp đun nhỏ lửa, vớt bọt, đảo nhẹ tay. Khi dâu trong, nước sánh lại thì vắt nước cốt chanh vào, đun thêm 5 phút rồi tắt bếp. Để nguội, cho vào hũ kín bảo quản trong tủ lạnh.",
+    'canhcachuatrung': "Nguyên liệu: 2 quả cà chua, 2 quả trứng, hành lá, gia vị.\nCách làm: Phi thơm hành, cho cà chua vào xào mềm, thêm nước đun sôi. Đập trứng vào bát, đánh tan rồi đổ từ từ vào nồi, khuấy nhẹ. Nêm nếm vừa ăn, rắc hành lá rồi tắt bếp.",
+    'sotcachua': "Nguyên liệu: 3 quả cà chua, 1 củ tỏi, dầu ăn, gia vị.\nCách làm: Phi thơm tỏi, cho cà chua vào xào nhuyễn, nêm nếm vừa ăn. Đun nhỏ lửa đến khi sốt sánh lại, dùng làm sốt cho các món xào, rán.",
+    'saladcachua': "Nguyên liệu: 2 quả cà chua, 1 quả dưa leo, rau xà lách, dầu oliu, muối, tiêu.\nCách làm: Cà chua, dưa leo rửa sạch, cắt lát. Trộn đều với rau xà lách, rưới dầu oliu, nêm muối tiêu vừa ăn.",
+    'pizza_cachua': "Nguyên liệu: Đế pizza, 2 quả cà chua, phô mai mozzarella, sốt cà chua, lá oregano, dầu oliu.\nCách làm: Phết sốt cà chua lên đế pizza, xếp cà chua cắt lát và phô mai lên trên, rắc lá oregano, rưới chút dầu oliu. Nướng ở 200°C trong 10-12 phút cho phô mai chảy và đế giòn. Lấy ra cắt miếng và thưởng thức.",
+    'nuocepcachua': "Nguyên liệu: 3 quả cà chua, 2 thìa đường, đá viên.\nCách làm: Cà chua rửa sạch, cắt miếng, cho vào máy xay sinh tố cùng đường và đá, xay nhuyễn, lọc lấy nước uống mát lạnh.",
+    'sinhtodautay': "Nguyên liệu: 200g dâu tây, 100ml sữa tươi, 2 thìa sữa đặc, đá viên.\nCách làm: Dâu tây rửa sạch, cắt nhỏ, cho vào máy xay cùng sữa tươi, sữa đặc và đá. Xay nhuyễn, rót ra ly và thưởng thức.",
+    'banhmoussedautay': "Nguyên liệu: Dâu tây, kem tươi, gelatin, đường, bánh quy.\nCách làm: Dâu tây xay nhuyễn, trộn với gelatin đã ngâm nở, kem tươi và đường. Đổ hỗn hợp lên đế bánh quy, để lạnh cho đông lại.",
+    'suachuadautay': "Nguyên liệu: Dâu tây, sữa chua, đường.\nCách làm: Dâu tây rửa sạch, cắt nhỏ, trộn với sữa chua và đường, để lạnh rồi ăn.",
+    'kemdautay': "Nguyên liệu: 300g dâu tây, 200ml kem tươi, 100ml sữa đặc, 50g đường.\nCách làm: Dâu tây rửa sạch, xay nhuyễn với đường. Đánh bông kem tươi, trộn đều với sữa đặc và dâu tây xay. Đổ vào khuôn, để ngăn đá 4-6 tiếng là dùng được.",
+    # ... Thêm các món khác ...
+}
+
 def strip_accents(text):
     return ''.join(c for c in unicodedata.normalize('NFD', text)
                    if unicodedata.category(c) != 'Mn').lower().replace(' ', '-')
@@ -21,6 +35,38 @@ class Chatbot:
         self.conversation_history = []
         self.last_clear_time = datetime.now()
 
+    def get_chat_response(self, user_message):
+        try:
+            # Thêm câu hỏi của người dùng vào lịch sử
+            self.conversation_history.append({"role": "user", "content": user_message})
+            
+            # Giới hạn lịch sử hội thoại để tránh token quá lớn
+            if len(self.conversation_history) > 10:
+                self.conversation_history = self.conversation_history[-10:]
+            
+            # Gọi API OpenAI để lấy câu trả lời
+            response = self.client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "Bạn là một trợ lý thân thiện của cửa hàng thực phẩm. Bạn có thể trả lời các câu hỏi về sản phẩm, chính sách cửa hàng và các vấn đề khác. Hãy trả lời ngắn gọn, thân thiện và hữu ích."},
+                    *self.conversation_history
+                ],
+                temperature=0.7,
+                max_tokens=150
+            )
+            
+            # Lấy câu trả lời từ API
+            assistant_response = response.choices[0].message.content
+            
+            # Thêm câu trả lời vào lịch sử
+            self.conversation_history.append({"role": "assistant", "content": assistant_response})
+            
+            return assistant_response
+            
+        except Exception as e:
+            print("OpenAI API error:", e)
+            return "Xin lỗi, tôi đang gặp một số vấn đề kỹ thuật. Vui lòng thử lại sau."
+
     def get_response(self, user_message):
         try:
             # Kiểm tra và xóa lịch sử nếu đã qua 15 phút
@@ -35,66 +81,54 @@ class Chatbot:
 
                 # Chuẩn hóa user input
                 user_input_norm = strip_accents(user_message)
+                print("DEBUG: user_input_norm =", user_input_norm)
 
-                # Sử dụng regex không dấu
-                match_mon_an = re.search(r'(?:cac )?mon(?: an)? tu ([\\w\\s\\-]+)', user_input_norm)
-                if match_mon_an:
-                    ten_sp = match_mon_an.group(1).strip()
-                    ten_sp_norm = strip_accents(ten_sp).replace(' ', '-')
-                    print("DEBUG: ten_sp_norm =", ten_sp_norm)
-                    found = None
-                    for p in products:
-                        p_name_norm = strip_accents(p.name).replace(' ', '-')
-                        print("DEBUG: so sánh", p_name_norm, "với", ten_sp_norm)
-                        if p_name_norm == ten_sp_norm:
-                            found = p
-                            break
-                    # Nếu không khớp tuyệt đối, thử khớp gần đúng
-                    if not found:
-                        for p in products:
-                            if ten_sp_norm in strip_accents(p.name):
-                                found = p
-                                break
-                    if found:
-                        mon_an = []
-                        name_norm = normalize_name(found.name)
-                        print("DEBUG: name_norm =", name_norm)
-                        if 'cachua' in name_norm:
-                            mon_an = [
-                                'Canh cà chua trứng',
-                                'Sốt cà chua',
-                                'Salad cà chua',
-                                'Cà chua nhồi thịt',
-                                'Nước ép cà chua'
-                            ]
-                        elif 'dautay' in name_norm:
-                            mon_an = [
-                                'Sinh tố dâu tây',
-                                'Bánh mousse dâu tây',
-                                'Mứt dâu tây',
-                                'Sữa chua dâu tây',
-                                'Dâu tây chấm sữa đặc'
-                            ]
-                        print("DEBUG: mon_an =", mon_an)
-                        if mon_an:
-                            print("DEBUG: Trả về gợi ý món ăn cho", found.name)
-                            return jsonify({
-                                "type": "text",
-                                "response": f"Một số món ăn từ {found.name} bạn có thể tham khảo: " + ', '.join(mon_an)
-                            })
-                        else:
-                            return jsonify({
-                                "type": "text",
-                                "response": f"Bạn có thể chế biến nhiều món ăn từ {found.name} như: xào, luộc, nấu canh, làm salad..."
-                            })
+                # Xử lý chào hỏi
+                if any(greet in user_input_norm for greet in ['xin-chao', 'hello']):
+                    return jsonify({
+                        "type": "text",
+                        "response": "Xin chào! Tôi có thể giúp gì cho bạn hôm nay?"
+                    })
+
+                # Nếu user nhắn "có" và vừa hỏi sản phẩm:
+                if user_input_norm in ['co', 'có'] and self.last_product_name:
+                    name_norm = normalize_name(self.last_product_name)
+                    mon_an = []
+                    if 'cachua' in name_norm:
+                        mon_an = [
+                            'Canh cà chua trứng',
+                            'Sốt cà chua',
+                            'Salad cà chua',
+                            'Cà chua nhồi thịt',
+                            'Nước ép cà chua'
+                        ]
+                    elif 'dautay' in name_norm:
+                        mon_an = [
+                            'Sinh tố dâu tây',
+                            'Bánh mousse dâu tây',
+                            'Mứt dâu tây',
+                            'Sữa chua dâu tây',
+                            'Dâu tây chấm sữa đặc'
+                        ]
+                    if mon_an:
+                        return jsonify({
+                            "type": "text",
+                            "response": f"Một số món ăn từ {self.last_product_name} bạn có thể tham khảo: " + ', '.join(mon_an)
+                        })
                     else:
                         return jsonify({
                             "type": "text",
-                            "response": f"Không tìm thấy sản phẩm '{ten_sp}' để gợi ý món ăn."
+                            "response": f"Bạn có thể chế biến nhiều món ăn từ {self.last_product_name} như: xào, luộc, nấu canh, làm salad..."
                         })
 
-                print("DEBUG: user_input_norm =", user_input_norm)
-
+                # Nếu user nhắn tên món ăn (không cần kiểm tra RECIPE_MAP nữa)
+                if self.is_dish_name(user_message):
+                    prompt = f"Hãy viết công thức chi tiết cho món ăn '{user_message}' bằng tiếng Việt, gồm nguyên liệu và các bước thực hiện."
+                    ai_recipe = self.get_chat_response(prompt)
+                    return jsonify({
+                        "type": "text",
+                        "response": ai_recipe
+                    })
                 # Xử lý lọc theo loại hàng
                 categories = ['trai-cay', 'thit-ca', 'rau-cu']
                 found_category = None
@@ -103,8 +137,7 @@ class Chatbot:
                         found_category = cat
                         break
 
-                # --- Bổ sung nhận diện tên sản phẩm + (trên/dưới/từ) + giá ---
-                # Ghi chú: Chatbot vẫn hiểu được tên sản phẩm ngay cả khi không có từ khóa 'sản phẩm' trong câu hỏi.
+                # Tìm kiếm sản phẩm theo tên
                 found_product = None
                 user_words = user_input_norm.split('-')
                 for p in products:
@@ -114,7 +147,7 @@ class Chatbot:
                     if name_norm == user_input_norm:
                         found_product = p
                         break
-                # Nếu không khớp chính xác, thử khớp gần đúng: input là một từ trong tên sản phẩm
+                # Nếu không khớp chính xác, thử khớp gần đúng
                 if not found_product:
                     for p in products:
                         name_norm = strip_accents(p.name)
@@ -122,8 +155,9 @@ class Chatbot:
                             found_product = p
                             break
 
-                # --- Bổ sung câu trả lời linh động trước khi đưa ra card sản phẩm ---
+                # Xử lý câu hỏi về sản phẩm
                 if found_product:
+                    self.last_product_name = found_product.name
                     response = f"Kết quả cho sản phẩm {found_product.name}:"
                     # Tìm "trên", "dưới", "từ ... đến ..." liên quan giá
                     price_min, price_max = None, None
@@ -145,6 +179,7 @@ class Chatbot:
                         price_match = re.search(r'gia[^\d]*(\d+)', user_input_norm)
                         if price_match:
                             price_max = int(price_match.group(1))
+                    
                     # Lọc sản phẩm theo tên và giá
                     filtered = []
                     for p in products:
@@ -169,7 +204,8 @@ class Chatbot:
                         return jsonify({
                             "type": "products",
                             "response": response,
-                            "products": filtered
+                            "products": filtered,
+                            "follow_up": f"Bạn có muốn tham khảo một số món từ sản phẩm {found_product.name} không? (Trả lời 'có' để xem gợi ý món ăn)"
                         })
                     else:
                         return jsonify({
@@ -177,36 +213,7 @@ class Chatbot:
                             "response": f"Không tìm thấy sản phẩm {found_product.name} phù hợp với yêu cầu giá."
                         })
 
-                # Nếu có tên sản phẩm trong câu hỏi nhưng không có từ khóa giá, chỉ lọc theo tên sản phẩm
-                if found_product and not any(x in user_input_norm for x in ['tren', 'duoi', 'tu', 'gia']):
-                    filtered = []
-                    for p in products:
-                        if strip_accents(p.name) != strip_accents(found_product.name):
-                            continue
-                        available_quantity = p.get_available_quantity()
-                        filtered.append({
-                            "id": p.id,
-                            "name": p.name,
-                            "price": p.price,
-                            "description": p.description,
-                            "image_url": p.image_url,
-                            "status": "Còn hàng" if available_quantity > 0 else "Hết hàng",
-                            "available_quantity": available_quantity,
-                            "category": p.category
-                        })
-                    if filtered:
-                        return jsonify({
-                            "type": "products",
-                            "response": f"Kết quả cho sản phẩm {found_product.name}:",
-                            "products": filtered
-                        })
-                    else:
-                        return jsonify({
-                            "type": "text",
-                            "response": f"Không tìm thấy sản phẩm {found_product.name}."
-                        })
-
-                # Xử lý lọc theo khoảng giá (linh hoạt)
+                # Xử lý lọc theo khoảng giá
                 price_min, price_max = None, None
                 range_match = re.search(r'(?:gia|tu)?\s*(\d+)[^\d]+(\d+)', user_input_norm)
                 if range_match:
@@ -225,7 +232,7 @@ class Chatbot:
                             if price_match:
                                 price_max = int(price_match.group(1))
 
-                # Lọc sản phẩm
+                # Lọc sản phẩm theo giá và danh mục
                 for p in products:
                     available_quantity = p.get_available_quantity()
                     # Lọc theo loại hàng
@@ -247,38 +254,21 @@ class Chatbot:
                         "category": p.category
                     })
 
-            # --- Bổ sung xử lý câu hỏi linh động theo vấn đề ---
-            # Kiểm tra các từ khóa liên quan đến vấn đề người dùng hỏi
-            if 'thanh toan' in user_input_norm:
-                return jsonify({
-                    "type": "text",
-                    "response": "Bạn có thể thanh toán bằng tiền mặt khi nhận hàng (COD), chuyển khoản ngân hàng hoặc qua cổng thanh toán VNPay."
-                })
-            elif 'doi tra' in user_input_norm:
-                return jsonify({
-                    "type": "text",
-                    "response": "Chúng tôi chấp nhận đổi trả sản phẩm trong vòng 7 ngày kể từ ngày nhận hàng, với điều kiện sản phẩm còn nguyên vẹn và chưa sử dụng."
-                })
-            elif 'giao hang' in user_input_norm:
-                return jsonify({
-                    "type": "text",
-                    "response": "Thời gian giao hàng dự kiến từ 1-3 ngày làm việc, tùy thuộc vào địa chỉ giao hàng của bạn."
-                })
-            # Nếu không có từ khóa nào khớp, tiếp tục xử lý theo logic hiện tại
-
-            # Nếu có kết quả, trả về card sản phẩm
-            if product_list:
-                return jsonify({
-                    "type": "products",
-                    "response": "Các sản phẩm bạn có thể quan tâm là:",
-                    "products": product_list
-                })
-            # Nếu không có, trả về text
-            else:
-                return jsonify({
-                    "type": "text",
-                    "response": "Không tìm thấy sản phẩm phù hợp với yêu cầu của bạn."
-                })
+                # Trả về kết quả sản phẩm nếu có
+                if product_list:
+                    return jsonify({
+                        "type": "products",
+                        "response": "Các sản phẩm bạn có thể quan tâm là:",
+                        "products": product_list
+                    })
+                # Nếu không có kết quả sản phẩm và không phải câu hỏi thực tế về cửa hàng
+                else:
+                    # Sử dụng OpenAI để trả lời các câu hỏi chung
+                    chat_response = self.get_chat_response(user_message)
+                    return jsonify({
+                        "type": "text",
+                        "response": chat_response
+                    })
 
         except Exception as e:
             import traceback

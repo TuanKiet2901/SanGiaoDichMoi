@@ -327,11 +327,41 @@ function addMessage(message, isUser, skipSave = false) {
   messageDiv.className = isUser ? 'flex justify-end' : 'flex justify-start';
   const bubble = document.createElement('div');
   bubble.className = 'message-bubble ' + (isUser ? 'user' : 'bot');
-  bubble.textContent = message;
+
+  // Nếu là gợi ý món ăn, tách từng món thành nút
+  if (!isUser && message.startsWith('Một số món ăn từ')) {
+    // Tìm đoạn sau dấu ':' là danh sách món
+    const idx = message.indexOf(':');
+    if (idx !== -1) {
+      const intro = message.slice(0, idx + 1);
+      const dishes = message.slice(idx + 1).split(',').map(s => s.trim());
+      bubble.innerHTML = intro + '<br>' + dishes.map(mon =>
+        `<button class="dish-btn" style="margin:2px 4px;padding:2px 8px;border-radius:8px;background:#f3f3f3;border:1px solid #ccc;cursor:pointer">${mon}</button>`
+      ).join('');
+    } else {
+      bubble.textContent = message;
+    }
+  } else {
+    bubble.textContent = message;
+  }
+
   messageDiv.appendChild(bubble);
   messagesDiv.appendChild(messageDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
   if (!skipSave) saveChatHistory();
+
+  // Gắn sự kiện click cho các nút món ăn
+  if (!isUser && message.startsWith('Một số món ăn từ')) {
+    setTimeout(() => {
+      document.querySelectorAll('.dish-btn').forEach(btn => {
+        btn.onclick = function() {
+          // Gửi tên món lên như một tin nhắn user
+          document.getElementById('user-input').value = btn.textContent;
+          sendMessage();
+        };
+      });
+    }, 100);
+  }
 }
 
 // Gửi tin nhắn
@@ -362,6 +392,9 @@ async function sendMessage() {
           addMessage(data.response, false);
         }
         addProductCards(data.products);
+        if (data.follow_up) {
+          addMessage(data.follow_up, false);
+        }
       } else {
         addMessage(data.response, false);
       }
