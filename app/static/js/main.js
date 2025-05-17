@@ -1,5 +1,7 @@
 // Main JavaScript file for Agri TraceChain
 
+let lastProductName = null;
+
 // Custom Alert Function
 function showAlert(message, type = 'info', duration = 5000) {
     // Remove any existing alerts
@@ -376,10 +378,14 @@ async function sendMessage() {
   document.getElementById('typing-indicator').classList.remove('hidden');
 
   try {
+    const body = { message: message };
+    if (message.toLowerCase() === "có" && lastProductName) {
+      body.product_name = lastProductName;
+    }
     const response = await fetch('/chat/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: message })
+      body: JSON.stringify(body)
     });
     const data = await response.json();
 
@@ -393,6 +399,11 @@ async function sendMessage() {
         }
         addProductCards(data.products);
         if (data.follow_up) {
+          // Lưu lại tên sản phẩm cuối cùng
+          const match = data.follow_up.match(/sản phẩm (.+) không/i);
+          if (match) {
+            lastProductName = match[1].trim();
+          }
           addMessage(data.follow_up, false);
         }
       } else {
