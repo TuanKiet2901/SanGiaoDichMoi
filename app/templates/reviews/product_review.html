@@ -108,6 +108,7 @@
                 <h2 class="text-xl font-bold text-gray-800 mb-4">{% if existing_review %}Cập nhật đánh giá{% else %}Viết đánh giá{% endif %}</h2>
                 
                 <form method="POST" action="{{ url_for('reviews.product_review', product_id=product.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-4">
                         <label class="block text-gray-700 font-medium mb-2">Đánh giá của bạn</label>
                         <div class="star-rating mb-2">

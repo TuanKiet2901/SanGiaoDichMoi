@@ -151,6 +151,7 @@
         
         <form method="POST" action="{{ url_for('reviews.order_review', order_id=order.id) }}" id="review-form">
             <input type="hidden" id="product_id" name="product_id" value="">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
             <div class="mb-4">
                 <label class="block text-gray-700 font-medium mb-2">Đánh giá của bạn</label>
