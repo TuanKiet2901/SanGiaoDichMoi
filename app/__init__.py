@@ -43,6 +43,11 @@ def create_app():
     app.config['MAIL_PASSWORD'] = 'yfqjutgvjsfkjymj'
     app.config['MAIL_DEFAULT_SENDER'] = 'kiet81036@gmail.com'
 
+    # Cấu hình session cho production
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
     # Khởi tạo các extension với app
     db.init_app(app)
     migrate.init_app(app, db)
