@@ -4,12 +4,24 @@ services:
     env: docker
     dockerfilePath: ./Dockerfile.ganache
     plan: free
+    healthCheckPath: /
     numInstances: 1
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
+
+  - type: web
+    name: ganache-nginx
+    env: docker
+    dockerfilePath: ./Dockerfile.nginx
+    plan: free
+    healthCheckPath: /
+    numInstances: 1
+    envVars:
+      - key: GANACHE_URL
+        value: http://ganache-service:10000
 
   - type: web
     name: agri-tracechain-app
