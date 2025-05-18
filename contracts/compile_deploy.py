@@ -86,7 +86,8 @@ def deploy_contract(compiled_sol, w3, account_address, private_key):
 
 def main():
     # Connect to Ganache
-    w3 = Web3(Web3.HTTPProvider("http://127.0.0.1:7545"))
+    ganache_url = os.getenv("GANACHE_URL", "http://127.0.0.1:7545")
+    w3 = Web3(Web3.HTTPProvider(ganache_url))
     
     # Check if connected
     if not w3.is_connected():
@@ -98,6 +99,10 @@ def main():
     # Get account from environment or use default Ganache account
     account_address = os.getenv("ETHEREUM_ADDRESS")
     private_key = os.getenv("ETHEREUM_PRIVATE_KEY")
+    
+    print("GANACHE_URL:", ganache_url)
+    print("ETHEREUM_ADDRESS:", account_address)
+    print("ETHEREUM_PRIVATE_KEY:", private_key)
     
     # Compile the contract
     print("Compiling contract...")
