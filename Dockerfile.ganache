@@ -4,9 +4,13 @@ WORKDIR /app
 
 # Cài đặt ganache-cli
 RUN npm install -g ganache
+RUN apt-get update && apt-get install -y python3
+
+COPY healthcheck.py /app/healthcheck.py
 
 # Mở port Render có thể cấp
 EXPOSE 10000
+EXPOSE 10001
 
 # Chạy Ganache với cổng lấy từ biến môi trường PORT (mặc định 10000)
-CMD sh -c "ganache --host 0.0.0.0 --port ${PORT:-10000} --chain.networkId 1337 --database.dbPath /app/chaindata --chain.chainId 1337 --wallet.totalAccounts 10 --wallet.defaultBalance 1000 --miner.blockGasLimit 12000000 --miner.defaultGasPrice 20000000000 --server.ws true" 
+CMD sh -c "ganache --host 0.0.0.0 --port 10000 --chain.networkId 1337 --database.dbPath /app/chaindata --chain.chainId 1337 --wallet.totalAccounts 10 --wallet.defaultBalance 1000 --miner.blockGasLimit 12000000 --miner.defaultGasPrice 20000000000 --server.ws true & python3 /app/healthcheck.py" 

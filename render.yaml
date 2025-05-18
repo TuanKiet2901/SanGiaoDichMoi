@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: ganache-service
+    name: ganache-service-7809
     env: docker
     dockerfilePath: ./Dockerfile.ganache
     plan: free
-    healthCheckPath: /
+    healthCheckPath: http://localhost:10001/
     numInstances: 1
     envVars:
       - key: NODE_ENV
@@ -13,7 +13,7 @@ services:
         value: 10000
 
   - type: web
-    name: ganache-nginx
+    name: ganache-nginx-7809
     env: docker
     dockerfilePath: ./Dockerfile.nginx
     plan: free
@@ -21,17 +21,14 @@ services:
     numInstances: 1
     envVars:
       - key: GANACHE_URL
-        value: http://ganache-service:10000
+        value: http://ganache-service-7809.onrender.com:10000
 
   - type: web
-    name: agri-tracechain-app
+    name: agri-tracechain-app-7809
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn wsgi:app --workers=1
     envVars:
       - key: GANACHE_URL
-        fromService:
-          type: web
-          name: ganache-nginx
-          envVarKey: RENDER_EXTERNAL_URL
+        value: https://ganache-nginx-7809.onrender.com
       # DATABASE_URL sẽ được add thủ công sau khi tạo database 

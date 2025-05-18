@@ -7,5 +7,5 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.wfile.write(b"OK")
 
 if __name__ == "__main__":
-    server = HTTPServer(("", 10000), HealthHandler)
+    server = HTTPServer(("", 10001), HealthHandler)
     server.serve_forever() 
