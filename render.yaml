@@ -1,6 +1,7 @@
 services:
-  - type: postgres
+  - type: database
     name: agri-tracechain-db
+    databaseName: postgresql
     plan: free
     ipAllowList: []
     databases:
