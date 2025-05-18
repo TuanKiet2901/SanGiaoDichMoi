@@ -112,7 +112,7 @@ def create_app():
         app.config['ETHEREUM_CLIENT'] = EthereumClient(ganache_url)
         app.logger.info(f'Ethereum client initialized successfully with URL: {ganache_url}')
         print("Ganache URL:", ganache_url)
-        print("Web3 connected:", app.config['ETHEREUM_CLIENT'].web3.is_connected())
+        print("Web3 connected:", app.config['ETHEREUM_CLIENT'].w3.is_connected())
     except Exception as e:
         app.logger.error(f'Failed to initialize Ethereum client: {str(e)}')
 
