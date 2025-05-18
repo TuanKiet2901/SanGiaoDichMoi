@@ -109,10 +109,24 @@
                             </div>
                             <div>
                                 <div class="text-sm font-medium text-gray-900">{{ item.product.name }}</div>
-                                <div class="text-xs text-gray-500">{{ item.quantity }} x {{ "{:,.0f}".format(item.unit_price) }} đ</div>
+                                <div class="text-xs text-gray-500">
+                                    {% if item.product.is_near_expiry %}
+                                        <span style="text-decoration: line-through; color: #999;">{{ "{:,}".format(item.product.price|int) }} đ</span><br>
+                                        <span style="color: #e74c3c; font-weight: bold;">{{ "{:,}".format(item.product.discounted_price|int) }} đ</span>
+                                        <span style="background-color: #e74c3c; color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.8em;">-{{ item.product.discount_percentage }}%</span>
+                                    {% else %}
+                                        <span>{{ "{:,}".format(item.product.price|int) }} đ</span>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
-                        <div class="text-sm font-medium text-gray-900">{{ "{:,.0f}".format(item.subtotal) }} đ</div>
+                        <div class="text-sm font-medium text-gray-900">
+                            {% if item.product.is_near_expiry %}
+                                <span style="color: #e74c3c; font-weight: bold;">{{ "{:,}".format((item.product.discounted_price * item.quantity)|int) }} đ</span>
+                            {% else %}
+                                <span>{{ "{:,}".format((item.product.price * item.quantity)|int) }} đ</span>
+                            {% endif %}
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
