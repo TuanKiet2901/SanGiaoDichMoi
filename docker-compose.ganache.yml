@@ -1,0 +1,28 @@
+version: '3'
+services:
+  ganache:
+    build:
+      context: .
+      dockerfile: Dockerfile.ganache
+    ports:
+      - "8545:8545"
+    volumes:
+      - ganache_data:/app/chaindata
+    restart: always
+    environment:
+      - NODE_ENV=production
+    networks:
+      - ganache_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8545"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  ganache_network:
+    driver: bridge
+
+volumes:
+  ganache_data:
+    driver: local 

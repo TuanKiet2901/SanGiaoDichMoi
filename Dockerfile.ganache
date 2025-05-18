@@ -1,0 +1,22 @@
+FROM node:18
+
+WORKDIR /app
+
+# Cài đặt ganache-cli
+RUN npm install -g ganache
+
+# Mở port 8545 cho Ganache
+EXPOSE 8545
+
+# Chạy Ganache với các tham số cấu hình
+CMD ["ganache", \
+    "--host", "0.0.0.0", \
+    "--port", "8545", \
+    "--chain.networkId", "1337", \
+    "--database.dbPath", "/app/chaindata", \
+    "--chain.chainId", "1337", \
+    "--wallet.totalAccounts", "10", \
+    "--wallet.defaultBalance", "1000", \
+    "--miner.blockGasLimit", "12000000", \
+    "--miner.defaultGasPrice", "20000000000", \
+    "--server.ws", "true"] 

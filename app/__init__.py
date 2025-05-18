@@ -108,8 +108,9 @@ def create_app():
     # Khởi tạo blockchain integration
     try:
         from app.blockchain.ethereum import EthereumClient
-        app.config['ETHEREUM_CLIENT'] = EthereumClient(os.getenv('ETHEREUM_NODE_URL', 'http://127.0.0.1:7545'))
-        app.logger.info('Ethereum client initialized successfully')
+        ganache_url = os.getenv('GANACHE_URL', 'http://127.0.0.1:7545')
+        app.config['ETHEREUM_CLIENT'] = EthereumClient(ganache_url)
+        app.logger.info(f'Ethereum client initialized successfully with URL: {ganache_url}')
     except Exception as e:
         app.logger.error(f'Failed to initialize Ethereum client: {str(e)}')
 

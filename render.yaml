@@ -16,4 +16,31 @@ services:
       - key: DB_USER
         value: agri_tracechain_user
       - key: DB_PASSWORD
-        generateValue: true 
+        generateValue: true
+
+  - type: web
+    name: ganache-service
+    env: docker
+    dockerfilePath: ./Dockerfile.ganache
+    plan: free
+    healthCheckPath: /
+    numInstances: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+  - type: web
+    name: agri-tracechain-app
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: GANACHE_URL
+        fromService:
+          type: web
+          name: ganache-service
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agri_tracechain
+          property: connectionString 
