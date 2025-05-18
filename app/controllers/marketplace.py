@@ -273,8 +273,8 @@ def checkout():
                 product_id=cart_item.product_id,
                 batch_id=cart_item.batch_id,
                 quantity=cart_item.quantity,
-                unit_price=float(product.price),
-                subtotal=float(product.price) * cart_item.quantity
+                unit_price=product.discounted_price,
+                subtotal=product.discounted_price * cart_item.quantity
             )
 
             db.session.add(order_item)
@@ -467,8 +467,8 @@ def create_order():
                 product_id=cart_item.product_id,
                 batch_id=cart_item.batch_id,
                 quantity=cart_item.quantity,
-                unit_price=float(product.price),
-                subtotal=float(product.price) * cart_item.quantity
+                unit_price=product.discounted_price,
+                subtotal=product.discounted_price * cart_item.quantity
             )
 
             db.session.add(order_item)

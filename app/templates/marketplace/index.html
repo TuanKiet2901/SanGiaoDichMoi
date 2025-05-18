@@ -84,6 +84,21 @@
 
             <div class="p-4">
                 <h2 class="text-lg font-bold text-gray-800 mb-1">{{ product.name }}</h2>
+                <div class="product-price">
+                    {% if product.is_near_expiry %}
+                        <span class="original-price" style="text-decoration: line-through; color: #999;">
+                            {{ "%.0f"|format(product.price|float) }}đ
+                        </span>
+                        <span class="discounted-price" style="color: #e74c3c; font-weight: bold;">
+                            {{ "%.0f"|format(product.discounted_price|float) }}đ
+                        </span>
+                        <span class="discount-badge" style="background-color: #e74c3c; color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.8em;">
+                            -{{ product.discount_percentage }}%
+                        </span>
+                    {% else %}
+                        <span class="price">{{ "%.0f"|format(product.price|float) }}đ</span>
+                    {% endif %}
+                </div>
                 <p class="text-green-600 font-bold mb-2">
                     {{ "{:,.0f}".format(product.price) }} đ
                     <span id="product-qty-{{ product.id }}" class="ml-2 px-2 py-1 text-sm rounded-full {% if product.get_available_quantity(user_id) > 0 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
