@@ -8,6 +8,9 @@ class BlockchainTransaction(db.Model):
     tx_hash = db.Column(db.String(255), nullable=False)
     related_entity = db.Column(db.String(50), nullable=False)
     entity_id = db.Column(db.Integer, nullable=False)
+
+    #-----------
+    batch_id = db.Column(db.Integer, nullable=True)
     data = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     
