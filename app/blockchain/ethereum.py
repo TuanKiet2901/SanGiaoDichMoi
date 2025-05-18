@@ -11,7 +11,7 @@ class EthereumClient:
         Args:
             provider_url: URL of the Ethereum node (default: http://127.0.0.1:7545 for Ganache)
         """
-        self.provider_url = provider_url or os.getenv('ETHEREUM_PROVIDER_URL', 'http://127.0.0.1:7545')
+        self.provider_url = provider_url
         self.is_initialized = False
         
         # Thêm timeout và retry cho HTTPProvider
