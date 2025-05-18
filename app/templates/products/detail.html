@@ -204,7 +204,11 @@
                         {% if batch.quantity == 0 %}
                             <span class="text-red-600 font-bold">Đã hết hàng</span><br>
                         {% endif %}
-                        <a href="{{ url_for('trace.batch_info', qr_code=batch.qr_code) }}" class="text-green-600 hover:text-green-800">Xem chi tiết truy xuất</a>
+                        {% if batch.qr_code %}
+                            <a href="{{ url_for('trace.batch_info', qr_code=batch.qr_code) }}" class="text-green-600 hover:text-green-800">Xem chi tiết truy xuất</a>
+                        {% else %}
+                            <span class="text-gray-500">Chưa có mã QR truy xuất</span>
+                        {% endif %}
                     </div>
                 {% else %}
                     <div>Không còn lô hàng nào cho sản phẩm này.</div>
