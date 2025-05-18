@@ -57,7 +57,21 @@
 
                         <div class="flex justify-between items-center">
                             <div>
-                                <span class="font-bold text-green-600">{{ "{:,.0f}".format(product.price) }} đ</span>
+                                <div class="product-price">
+                                    {% if product.is_near_expiry %}
+                                        <span style="text-decoration: line-through; color: #999;">
+                                            {{ "%.0f"|format(product.price|float) }}đ
+                                        </span>
+                                        <span style="color: #e74c3c; font-weight: bold;">
+                                            {{ "%.0f"|format(product.discounted_price|float) }}đ
+                                        </span>
+                                        <span style="background-color: #e74c3c; color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.8em;">
+                                            -{{ product.discount_percentage }}%
+                                        </span>
+                                    {% else %}
+                                        <span class="font-bold text-green-600">{{ "{:,.0f}".format(product.price) }} đ</span>
+                                    {% endif %}
+                                </div>
                                 <span class="ml-2 px-2 py-1 text-sm rounded-full {% if product.quantity > 0 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
                                     {{ product.status }}
                                 </span>
