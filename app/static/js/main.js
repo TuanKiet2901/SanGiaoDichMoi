@@ -246,27 +246,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success) {
                     showAlert(data.message, 'success');
                     updateCartCount();
-
-                    // Cập nhật số lượng còn lại trên giao diện
-                    const qtySpan = document.getElementById(`product-qty-${productId}`);
-                    if (qtySpan) {
-                        // Lấy số lượng hiện tại từ text, trừ đi số lượng vừa thêm
-                        let match = qtySpan.textContent.match(/\((\d+)\)/);
-                        if (match) {
-                            let currentQty = parseInt(match[1]);
-                            let newQty = currentQty - parseInt(quantity);
-                            newQty = newQty < 0 ? 0 : newQty;
-                            // Cập nhật text
-                            qtySpan.textContent = (newQty === 0 ? 'Hết hàng' : 'Còn hàng') + ` (${newQty})`;
-                            // Đổi màu badge
-                            qtySpan.classList.remove('bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
-                            if (newQty === 0) {
-                                qtySpan.classList.add('bg-red-100', 'text-red-800');
-                            } else {
-                                qtySpan.classList.add('bg-green-100', 'text-green-800');
-                            }
-                        }
-                    }
                 } else {
                     showAlert(data.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng.', 'error');
                 }

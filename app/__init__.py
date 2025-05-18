@@ -106,11 +106,12 @@ def create_app():
     print(f"Upload folder: {app.config['UPLOAD_FOLDER']}")
 
     # Khởi tạo blockchain integration
-    # try:
-    #     from app.blockchain import init_app as init_blockchain
-    #     init_blockchain(app)
-    # except Exception as e:
-    #     app.logger.error(f"Failed to initialize blockchain integration: {str(e)}")
+    try:
+        from app.blockchain.ethereum import EthereumClient
+        app.config['ETHEREUM_CLIENT'] = EthereumClient(os.getenv('ETHEREUM_NODE_URL', 'http://127.0.0.1:7545'))
+        app.logger.info('Ethereum client initialized successfully')
+    except Exception as e:
+        app.logger.error(f'Failed to initialize Ethereum client: {str(e)}')
 
     mail.init_app(app)
 
