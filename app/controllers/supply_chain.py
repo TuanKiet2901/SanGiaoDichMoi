@@ -1,4 +1,5 @@
 import uuid
+import json
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app
 from app import db
 from app.models.batch import Batch
@@ -323,10 +324,16 @@ def verify_blockchain_submit(id):
         # Lưu thông tin giao dịch blockchain
         blockchain_tx = BlockchainTransaction(
             tx_hash=tx_hash,
-            batch_id=step.batch_id,
-            supply_chain_step_id=step.id,
-            action='add_step',
-            status='confirmed',
+            related_entity='supply_chain_step',
+            entity_id=step.id,
+            data=json.dumps({
+                'batch_id': step.batch_id,
+                'step_name': step.step_name,
+                'timestamp': step.timestamp.isoformat(),
+                'location': step.location,
+                'handler': handler.name,
+                'description': step.description
+            }),
             timestamp=datetime.utcnow()
         )
 
