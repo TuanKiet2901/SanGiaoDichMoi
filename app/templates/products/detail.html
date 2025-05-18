@@ -168,19 +168,25 @@
                 </div>
 
                 <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                    <button id="add-to-cart" class="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition duration-200 flex-1 flex items-center justify-center" data-product-id="{{ product.id }}">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                        Thêm vào giỏ hàng
-                    </button>
+                    {% if product.quantity > 0 %}
+                        <button id="add-to-cart" class="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition duration-200 flex-1 flex items-center justify-center" data-product-id="{{ product.id }}">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            Thêm vào giỏ hàng
+                        </button>
 
-                    <button id="buy-now" class="bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-200 flex-1 flex items-center justify-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                        Mua ngay
-                    </button>
+                        <button id="buy-now" class="bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-200 flex-1 flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Mua ngay
+                        </button>
+                    {% else %}
+                        <button class="bg-gray-400 text-white py-3 px-6 rounded-lg flex-1 flex items-center justify-center cursor-not-allowed opacity-60" disabled>
+                            Hết hàng
+                        </button>
+                    {% endif %}
                 </div>
             </div>
 
