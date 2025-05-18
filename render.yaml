@@ -15,7 +15,7 @@ services:
     name: agri-tracechain-app
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn wsgi:app --workers=1
     envVars:
       - key: GANACHE_URL
         fromService:
