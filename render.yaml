@@ -4,7 +4,6 @@ services:
     env: docker
     dockerfilePath: ./Dockerfile.ganache
     plan: free
-    healthCheckPath: /
     numInstances: 1
     envVars:
       - key: NODE_ENV
