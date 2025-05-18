@@ -1,24 +1,4 @@
 services:
-  - type: database
-    name: agri-tracechain-db
-    databaseName: postgresql
-    plan: free
-    ipAllowList: []
-    databases:
-      - name: agri_tracechain
-        user: agri_tracechain_user
-    envVars:
-      - key: DB_HOST
-        value: localhost
-      - key: DB_PORT
-        value: 5432
-      - key: DB_NAME
-        value: agri_tracechain
-      - key: DB_USER
-        value: agri_tracechain_user
-      - key: DB_PASSWORD
-        generateValue: true
-
   - type: web
     name: ganache-service
     env: docker
@@ -41,7 +21,4 @@ services:
           type: web
           name: ganache-service
           envVarKey: RENDER_EXTERNAL_URL
-      - key: DATABASE_URL
-        fromDatabase:
-          name: agri_tracechain
-          property: connectionString 
+      # DATABASE_URL sẽ được add thủ công sau khi tạo database 
