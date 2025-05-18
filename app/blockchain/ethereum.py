@@ -30,7 +30,7 @@ class EthereumClient:
             
             self.is_initialized = True
         except Exception as e:
-            current_app.logger.error(f"Failed to initialize Ethereum client: {str(e)}")
+            print(f"Failed to initialize Ethereum client: {str(e)}")
             self.is_initialized = False
     
     def is_connected(self):
@@ -170,7 +170,7 @@ class EthereumClient:
                 'exists': batch[5]
             }
         except Exception as e:
-            current_app.logger.error(f"Failed to get batch from blockchain: {str(e)}")
+            print(f"Failed to get batch from blockchain: {str(e)}")
             return None
     
     def get_supply_chain_steps(self, batch_id):
@@ -205,7 +205,7 @@ class EthereumClient:
             
             return steps
         except Exception as e:
-            current_app.logger.error(f"Failed to get supply chain steps from blockchain: {str(e)}")
+            print(f"Failed to get supply chain steps from blockchain: {str(e)}")
             return []
     
     def verify_transaction(self, tx_hash):
@@ -246,5 +246,5 @@ class EthereumClient:
                 'chain_id': self.w3.eth.chain_id
             }
         except Exception as e:
-            current_app.logger.error(f"Failed to verify transaction: {str(e)}")
+            print(f"Failed to verify transaction: {str(e)}")
             return None
