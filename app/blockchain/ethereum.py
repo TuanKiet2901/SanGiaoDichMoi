@@ -12,6 +12,7 @@ class EthereumClient:
             provider_url: URL of the Ethereum node (default: http://127.0.0.1:7545 for Ganache)
         """
         self.provider_url = provider_url or os.getenv('ETHEREUM_PROVIDER_URL', 'http://127.0.0.1:7545')
+        self.is_initialized = False
         
         # Thêm timeout và retry cho HTTPProvider
         self.w3 = Web3(Web3.HTTPProvider(
@@ -28,16 +29,14 @@ class EthereumClient:
         
         # Thử kết nối và in thông tin chi tiết
         try:
-            # Thử gọi một phương thức đơn giản để kiểm tra kết nối
-            # Sử dụng eth_blockNumber thay vì chain_id vì nó đơn giản hơn
+            # Sử dụng eth_blockNumber thay vì chain_id để kiểm tra kết nối
             block_number = self.w3.eth.block_number
             print(f"Successfully connected to block number: {block_number}")
             self.is_initialized = True
         except Exception as e:
             print(f"Failed to connect to Ethereum node at {self.provider_url}")
             print(f"Error details: {str(e)}")
-            
-            # Thử kết nối lại với URL không có dấu / ở cuối
+            # Thử lại với URL không có dấu / ở cuối
             if self.provider_url.endswith('/'):
                 try:
                     self.provider_url = self.provider_url[:-1]
@@ -63,24 +62,19 @@ class EthereumClient:
             else:
                 self.is_initialized = False
                 return
-        
         # Load contract ABI and address
         try:
             with open('contracts/contract_abi.json', 'r') as f:
                 self.contract_abi = json.load(f)
-            
             with open('contracts/contract_address.txt', 'r') as f:
                 self.contract_address = f.read().strip()
-            
             # Create contract instance
             self.contract = self.w3.eth.contract(
                 address=self.contract_address,
                 abi=self.contract_abi
             )
-            
             self.is_initialized = True
             print(f"Successfully initialized Ethereum client with contract at {self.contract_address}")
-            
         except Exception as e:
             print(f"Failed to initialize Ethereum client: {str(e)}")
             self.is_initialized = False
