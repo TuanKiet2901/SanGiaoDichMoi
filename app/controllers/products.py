@@ -91,6 +91,19 @@ def index():
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     products = pagination.items
 
+    # Kiểm tra và cập nhật trạng thái sản phẩm hết hạn
+    for product in products:
+        if product.is_expired:
+            # Cập nhật số lượng tồn kho của các lô hàng hết hạn về 0
+            for batch in product.batches:
+                if batch.expiry_date and batch.expiry_date < datetime.now().date():
+                    batch.quantity = 0
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error updating expired batch quantities: {str(e)}")
+
     return render_template('products/index.html',
                           title='Sản phẩm',
                           products=products,

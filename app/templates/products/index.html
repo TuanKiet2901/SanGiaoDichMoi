@@ -95,9 +95,23 @@
                 <h2 class="text-lg font-bold text-gray-800 mb-2">{{ product.name }}</h2>
                 <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ product.description }}</p>
                 
+                <div class="product-price">
+                    {% if product.is_near_expiry %}
+                        <span class="original-price" style="text-decoration: line-through; color: #999;">
+                            {{ "%.0f"|format(product.price|float) }}đ
+                        </span>
+                        <span class="discounted-price" style="color: #e74c3c; font-weight: bold;">
+                            {{ "%.0f"|format(product.discounted_price|float) }}đ
+                        </span>
+                        <span class="discount-badge" style="background-color: #e74c3c; color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.8em;">
+                            -{{ product.discount_percentage }}%
+                        </span>
+                    {% else %}
+                        <span class="price">{{ "%.0f"|format(product.price|float) }}đ</span>
+                    {% endif %}
+                </div>
+                
                 <div class="flex justify-between items-center">
-                    <span class="font-bold text-green-600">{{ "{:,.0f}".format(product.price) }} đ</span>
-                    
                     <div class="flex space-x-2">
                         <a href="{{ url_for('products.show', id=product.id) }}" class="text-blue-600 hover:underline">
                             Chi tiết

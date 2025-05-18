@@ -118,7 +118,21 @@
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                 <div class="mb-4">
                     <h2 class="text-2xl font-bold text-gray-800 mb-2">{{ product.name }}</h2>
-                    <p class="text-green-600 text-2xl font-bold">{{ "{:,.0f}".format(product.price) }} đ</p>
+                    <div class="product-price mb-4">
+                        {% if product.is_near_expiry %}
+                            <span class="original-price text-2xl" style="text-decoration: line-through; color: #999;">
+                                {{ "%.0f"|format(product.price|float) }}đ
+                            </span>
+                            <span class="discounted-price text-3xl" style="color: #e74c3c; font-weight: bold;">
+                                {{ "%.0f"|format(product.discounted_price|float) }}đ
+                            </span>
+                            <span class="discount-badge" style="background-color: #e74c3c; color: white; padding: 3px 8px; border-radius: 4px; font-size: 1em; margin-left: 10px;">
+                                -{{ product.discount_percentage }}%
+                            </span>
+                        {% else %}
+                            <span class="price text-3xl font-bold">{{ "%.0f"|format(product.price|float) }}đ</span>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <div class="mb-6">

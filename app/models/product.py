@@ -1,5 +1,5 @@
 from app import db
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class Product(db.Model):
     __tablename__ = 'products'
@@ -39,3 +39,38 @@ class Product(db.Model):
                 if cart_item:
                     total -= cart_item.quantity
         return total
+
+    @property
+    def nearest_expiry_date(self):
+        """Lấy ngày hết hạn gần nhất từ các lô hàng còn tồn kho"""
+        valid_batches = [batch for batch in self.batches if batch.get_available_quantity() > 0 and batch.expiry_date]
+        if not valid_batches:
+            return None
+        return min(batch.expiry_date for batch in valid_batches)
+
+    @property
+    def is_near_expiry(self):
+        """Kiểm tra xem sản phẩm có sắp hết hạn không (còn 2 ngày)"""
+        if not self.nearest_expiry_date:
+            return False
+        days_until_expiry = (self.nearest_expiry_date - datetime.now().date()).days
+        return 0 <= days_until_expiry <= 2
+
+    @property
+    def is_expired(self):
+        """Kiểm tra xem sản phẩm đã hết hạn chưa"""
+        if not self.nearest_expiry_date:
+            return False
+        return self.nearest_expiry_date < datetime.now().date()
+
+    @property
+    def discounted_price(self):
+        """Tính giá sau khi giảm 30% nếu sản phẩm sắp hết hạn"""
+        if self.is_near_expiry:
+            return float(self.price) * 0.7  # Giảm 30%
+        return float(self.price)
+
+    @property
+    def discount_percentage(self):
+        """Trả về phần trăm giảm giá nếu có"""
+        return 30 if self.is_near_expiry else 0
