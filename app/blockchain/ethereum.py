@@ -12,7 +12,21 @@ class EthereumClient:
             provider_url: URL of the Ethereum node (default: http://127.0.0.1:7545 for Ganache)
         """
         self.provider_url = provider_url or os.getenv('ETHEREUM_PROVIDER_URL', 'http://127.0.0.1:7545')
-        self.w3 = Web3(Web3.HTTPProvider(self.provider_url))
+        
+        # Thêm timeout và retry cho HTTPProvider
+        self.w3 = Web3(Web3.HTTPProvider(
+            self.provider_url,
+            request_kwargs={
+                'timeout': 30,  # 30 seconds timeout
+                'verify': False  # Disable SSL verification for development
+            }
+        ))
+        
+        # Kiểm tra kết nối trước khi load contract
+        if not self.w3.is_connected():
+            print(f"Failed to connect to Ethereum node at {self.provider_url}")
+            self.is_initialized = False
+            return
         
         # Load contract ABI and address
         try:
@@ -29,6 +43,8 @@ class EthereumClient:
             )
             
             self.is_initialized = True
+            print(f"Successfully initialized Ethereum client with contract at {self.contract_address}")
+            
         except Exception as e:
             print(f"Failed to initialize Ethereum client: {str(e)}")
             self.is_initialized = False

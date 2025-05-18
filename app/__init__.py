@@ -109,12 +109,24 @@ def create_app():
     try:
         from app.blockchain.ethereum import EthereumClient
         ganache_url = os.getenv('GANACHE_URL', 'http://127.0.0.1:7545')
+        print("Initializing Ethereum client with URL:", ganache_url)
+        
+        # Thêm dấu / nếu chưa có
+        if not ganache_url.endswith('/'):
+            ganache_url = ganache_url + '/'
+        
         app.config['ETHEREUM_CLIENT'] = EthereumClient(ganache_url)
-        app.logger.info(f'Ethereum client initialized successfully with URL: {ganache_url}')
-        print("Ganache URL:", ganache_url)
-        print("Web3 connected:", app.config['ETHEREUM_CLIENT'].w3.is_connected())
+        
+        if app.config['ETHEREUM_CLIENT'].is_connected():
+            app.logger.info(f'Ethereum client initialized successfully with URL: {ganache_url}')
+            print("Web3 connected: True")
+        else:
+            app.logger.error('Failed to connect to Ethereum node')
+            print("Web3 connected: False")
+        
     except Exception as e:
         app.logger.error(f'Failed to initialize Ethereum client: {str(e)}')
+        print(f"Error initializing Ethereum client: {str(e)}")
 
     mail.init_app(app)
 
