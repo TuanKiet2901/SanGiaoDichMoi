@@ -29,14 +29,40 @@ class EthereumClient:
         # Thử kết nối và in thông tin chi tiết
         try:
             # Thử gọi một phương thức đơn giản để kiểm tra kết nối
-            chain_id = self.w3.eth.chain_id
-            print(f"Successfully connected to chain ID: {chain_id}")
+            # Sử dụng eth_blockNumber thay vì chain_id vì nó đơn giản hơn
+            block_number = self.w3.eth.block_number
+            print(f"Successfully connected to block number: {block_number}")
             self.is_initialized = True
         except Exception as e:
             print(f"Failed to connect to Ethereum node at {self.provider_url}")
             print(f"Error details: {str(e)}")
-            self.is_initialized = False
-            return
+            
+            # Thử kết nối lại với URL không có dấu / ở cuối
+            if self.provider_url.endswith('/'):
+                try:
+                    self.provider_url = self.provider_url[:-1]
+                    print(f"Retrying with URL: {self.provider_url}")
+                    self.w3 = Web3(Web3.HTTPProvider(
+                        self.provider_url,
+                        request_kwargs={
+                            'timeout': 30,
+                            'verify': False,
+                            'headers': {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            }
+                        }
+                    ))
+                    block_number = self.w3.eth.block_number
+                    print(f"Successfully connected to block number: {block_number}")
+                    self.is_initialized = True
+                except Exception as e2:
+                    print(f"Failed to connect on retry: {str(e2)}")
+                    self.is_initialized = False
+                    return
+            else:
+                self.is_initialized = False
+                return
         
         # Load contract ABI and address
         try:
