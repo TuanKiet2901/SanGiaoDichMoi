@@ -186,8 +186,12 @@ def show(id):
     # Get user information
     producer = User.query.get(product.user_id)
 
-    # Get available batches for this product
-    batches = Batch.query.filter_by(product_id=id).all()
+    # Lấy lô hàng còn hàng (quantity > 0), harvest_date sớm nhất
+    batch = Batch.query.filter_by(product_id=id).filter(Batch.quantity > 0).order_by(Batch.harvest_date.asc()).first()
+
+    # Nếu không còn lô hàng nào còn hàng, lấy lô hàng mới nhất (để báo hết hàng)
+    if not batch:
+        batch = Batch.query.filter_by(product_id=id).order_by(Batch.harvest_date.desc()).first()
 
     # Get reviews for this product
     reviews = Review.query.filter_by(product_id=id).order_by(Review.created_at.desc()).all()
@@ -200,7 +204,7 @@ def show(id):
                           title=product.name,
                           product=product,
                           producer=producer,
-                          batches=batches,
+                          batch=batch,  # truyền batch thay vì batches
                           reviews=reviews)
 
 @products_bp.route('/<int:id>/edit', methods=['GET', 'POST'])

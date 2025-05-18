@@ -194,44 +194,20 @@
             <div class="bg-white rounded-lg shadow-md p-6">
                 <h2 class="text-xl font-bold text-gray-800 mb-4">Truy xuất nguồn gốc</h2>
 
-                {% if batches %}
-                    <div class="space-y-4">
-                        {% for batch in batches %}
-                        <div class="border-b border-gray-200 pb-4 {% if loop.last %}border-b-0 pb-0{% endif %}">
-                            <h3 class="font-medium text-gray-800 mb-2">Lô hàng #{{ batch.id }}</h3>
-                            <div class="grid grid-cols-2 gap-4">
-                                <p class="text-gray-600"><span class="font-medium">Ngày thu hoạch:</span> {{ batch.harvest_date.strftime('%d/%m/%Y') }}</p>
-                                <p class="text-gray-600"><span class="font-medium">Hạn sử dụng:</span> {{ batch.expiry_date.strftime('%d/%m/%Y') }}</p>
-                                <p class="text-gray-600"><span class="font-medium">Số lượng:</span> {{ batch.quantity }}</p>
-                                <p class="text-gray-600"><span class="font-medium">Trạng thái:</span>
-                                    <span class="inline-block px-2 py-1 text-xs rounded-full
-                                        {% if batch.status == 'harvested' %}bg-green-100 text-green-800
-                                        {% elif batch.status == 'processing' %}bg-blue-100 text-blue-800
-                                        {% elif batch.status == 'shipping' %}bg-purple-100 text-purple-800
-                                        {% elif batch.status == 'delivered' %}bg-yellow-100 text-yellow-800
-                                        {% endif %}">
-                                        {% if batch.status == 'harvested' %}Đã thu hoạch
-                                        {% elif batch.status == 'processing' %}Đang chế biến
-                                        {% elif batch.status == 'shipping' %}Đang vận chuyển
-                                        {% elif batch.status == 'delivered' %}Đã giao hàng
-                                        {% endif %}
-                                    </span>
-                                </p>
-                            </div>
-                            <div class="mt-2">
-                                {% if batch.qr_code %}
-                                    <a href="{{ url_for('trace.batch_info', qr_code=batch.qr_code) }}" class="text-green-600 hover:text-green-800">
-                                        Xem chi tiết truy xuất
-                                    </a>
-                                {% else %}
-                                    <span class="text-gray-400">Chưa có mã QR</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% endfor %}
+                {% if batch %}
+                    <div>
+                        <b>Lô hàng #{{ batch.id }}</b><br>
+                        Ngày thu hoạch: {{ batch.harvest_date.strftime('%d/%m/%Y') if batch.harvest_date else 'N/A' }}<br>
+                        Hạn sử dụng: {{ batch.expiry_date.strftime('%d/%m/%Y') if batch.expiry_date else 'N/A' }}<br>
+                        Số lượng: {{ batch.quantity }}<br>
+                        Trạng thái: <span class="inline-block px-2 py-1 rounded bg-green-700 text-white text-xs">{{ batch.status }}</span><br>
+                        {% if batch.quantity == 0 %}
+                            <span class="text-red-600 font-bold">Đã hết hàng</span><br>
+                        {% endif %}
+                        <a href="{{ url_for('trace.batch_info', qr_code=batch.qr_code) }}" class="text-green-600 hover:text-green-800">Xem chi tiết truy xuất</a>
                     </div>
                 {% else %}
-                    <p class="text-gray-600">Chưa có thông tin truy xuất nguồn gốc cho sản phẩm này.</p>
+                    <div>Không còn lô hàng nào cho sản phẩm này.</div>
                 {% endif %}
             </div>
         </div>

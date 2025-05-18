@@ -160,3 +160,15 @@ CREATE TABLE IF NOT EXISTS cart_items (
     FOREIGN KEY (product_id) REFERENCES products(id),
     FOREIGN KEY (batch_id) REFERENCES batches(id)
 );
+
+-- Bảng lịch sử chat
+CREATE TABLE IF NOT EXISTS chat_history (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    message TEXT NOT NULL,
+    is_user BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    type VARCHAR(20) DEFAULT 'text',
+    data TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
