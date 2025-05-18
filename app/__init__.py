@@ -111,10 +111,12 @@ def create_app():
         ganache_url = os.getenv('GANACHE_URL', 'http://127.0.0.1:7545')
         print("Initializing Ethereum client with URL:", ganache_url)
         
-        # Thêm dấu / nếu chưa có
+        # Đảm bảo URL kết thúc bằng / và không có khoảng trắng
+        ganache_url = ganache_url.strip()
         if not ganache_url.endswith('/'):
             ganache_url = ganache_url + '/'
         
+        # Thử kết nối với timeout dài hơn
         app.config['ETHEREUM_CLIENT'] = EthereumClient(ganache_url)
         
         if app.config['ETHEREUM_CLIENT'].is_connected():

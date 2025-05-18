@@ -18,13 +18,23 @@ class EthereumClient:
             self.provider_url,
             request_kwargs={
                 'timeout': 30,  # 30 seconds timeout
-                'verify': False  # Disable SSL verification for development
+                'verify': False,  # Disable SSL verification for development
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
             }
         ))
         
-        # Kiểm tra kết nối trước khi load contract
-        if not self.w3.is_connected():
+        # Thử kết nối và in thông tin chi tiết
+        try:
+            # Thử gọi một phương thức đơn giản để kiểm tra kết nối
+            chain_id = self.w3.eth.chain_id
+            print(f"Successfully connected to chain ID: {chain_id}")
+            self.is_initialized = True
+        except Exception as e:
             print(f"Failed to connect to Ethereum node at {self.provider_url}")
+            print(f"Error details: {str(e)}")
             self.is_initialized = False
             return
         
