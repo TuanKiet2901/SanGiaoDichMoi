@@ -21,7 +21,9 @@ class CartItem(db.Model):
 
     @property
     def unit_price(self):
-        return self.product.price if self.product else 0
+        if self.product:
+            return self.product.discounted_price
+        return 0
 
     @property
     def subtotal(self):
