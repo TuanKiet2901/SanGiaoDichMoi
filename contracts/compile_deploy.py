@@ -2,9 +2,13 @@ import json
 import os
 from web3 import Web3
 from solcx import compile_standard, install_solc
+from dotenv import load_dotenv
 
 # Install specific solc version
 install_solc("0.8.0")
+
+# Load environment variables
+load_dotenv()
 
 def compile_contract():
     # Read the contract source code
@@ -92,8 +96,8 @@ def main():
     print(f"Connected to Ethereum node. Chain ID: {w3.eth.chain_id}")
     
     # Get account from environment or use default Ganache account
-    account_address = os.getenv("ETHEREUM_ADDRESS", "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1")
-    private_key = os.getenv("ETHEREUM_PRIVATE_KEY", "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d")
+    account_address = os.getenv("ETHEREUM_ADDRESS")
+    private_key = os.getenv("ETHEREUM_PRIVATE_KEY")
     
     # Compile the contract
     print("Compiling contract...")

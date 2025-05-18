@@ -120,7 +120,12 @@ contract TraceabilityContract {
     /**
      * @dev Get batch information
      * @param _batchId Batch ID to retrieve
-     * @return Batch information
+     * @return id Batch ID
+     * @return productName Name of the product
+     * @return harvestDate Date of harvest
+     * @return location Location of harvest
+     * @return additionalInfo Additional information about the batch
+     * @return exists Whether the batch exists
      */
     function getBatch(uint256 _batchId) public view returns (
         uint256 id,
@@ -157,7 +162,12 @@ contract TraceabilityContract {
      * @dev Get a specific supply chain step for a batch
      * @param _batchId Batch ID to retrieve from
      * @param _stepIndex Index of the step to retrieve
-     * @return Supply chain step information
+     * @return batchId Batch ID
+     * @return stepName Name of the step
+     * @return timestamp Timestamp of the step
+     * @return location Location of the step
+     * @return handler Handler of the step
+     * @return additionalInfo Additional information about the step
      */
     function getSupplyChainStep(uint256 _batchId, uint256 _stepIndex) public view returns (
         uint256 batchId,
