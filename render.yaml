@@ -17,7 +17,7 @@ services:
     env: docker
     dockerfilePath: ./Dockerfile.nginx
     plan: free
-    healthCheckPath: /
+    healthCheckPath: /health
     numInstances: 1
     envVars:
       - key: GANACHE_URL
