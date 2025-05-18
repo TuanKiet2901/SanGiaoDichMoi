@@ -12,7 +12,4 @@ COPY supervisord.conf /etc/supervisord.conf
 # Mở port Render có thể cấp
 EXPOSE 10000
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
-
-# Chạy Ganache với cổng lấy từ biến môi trường PORT (mặc định 10002)
-CMD ganache --host 0.0.0.0 --port 10002 --chain.networkId 1337 --database.dbPath /app/chaindata --chain.chainId 1337 --wallet.totalAccounts 10 --wallet.defaultBalance 1000 --miner.blockGasLimit 12000000 --miner.defaultGasPrice 20000000000 --server.ws true 
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"] 
