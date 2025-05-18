@@ -261,15 +261,16 @@ class Chatbot:
                         })
                     if filtered:
                         # Lưu card sản phẩm vào chat_history
-                        bot_history = ChatHistory(
-                            user_id=user_id,
-                            message=response,  # "Các sản phẩm bạn có thể quan tâm là:"
-                            is_user=False,
-                            type="products",
-                            data=json.dumps(filtered)
-                        )
-                        db.session.add(bot_history)
-                        db.session.commit()
+                        if user_id:
+                            bot_history = ChatHistory(
+                                user_id=user_id,
+                                message=response,
+                                is_user=False,
+                                type="products",
+                                data=json.dumps(filtered)
+                            )
+                            db.session.add(bot_history)
+                            db.session.commit()
                         return jsonify({
                             "type": "products",
                             "response": response,
@@ -326,15 +327,16 @@ class Chatbot:
                 # Trả về kết quả sản phẩm nếu có
                 if product_list:
                     # Lưu card sản phẩm vào chat_history
-                    bot_history = ChatHistory(
-                        user_id=user_id,
-                        message="Các sản phẩm bạn có thể quan tâm là:",
-                        is_user=False,
-                        type="products",
-                        data=json.dumps(product_list)
-                    )
-                    db.session.add(bot_history)
-                    db.session.commit()
+                    if user_id:
+                        bot_history = ChatHistory(
+                            user_id=user_id,
+                            message="Các sản phẩm bạn có thể quan tâm là:",
+                            is_user=False,
+                            type="products",
+                            data=json.dumps(product_list)
+                        )
+                        db.session.add(bot_history)
+                        db.session.commit()
                     return jsonify({
                         "type": "products",
                         "response": "Các sản phẩm bạn có thể quan tâm là:",

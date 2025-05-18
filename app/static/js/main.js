@@ -494,12 +494,20 @@ async function loadChatHistory() {
   }
 }
 
+// Chỉ gọi loadChatHistory nếu đã đăng nhập
+function isLoggedIn() {
+    // Có thể kiểm tra bằng biến toàn cục, cookie, hoặc ẩn 1 element khi login
+    return !!document.querySelector('.dropdown-toggle'); // ví dụ: có menu user
+}
+
 // Hiện/ẩn khung chat
 function toggleChatbot() {
   const box = document.getElementById('chatbot-box');
   if (box.style.display === 'none' || box.style.display === '') {
     box.style.display = 'flex';
-    loadChatHistory();
+    if (isLoggedIn()) {
+      loadChatHistory();
+    }
     const messagesDiv = document.getElementById('chat-messages');
     if (messagesDiv.childElementCount === 0) {
       addMessage('Xin chào! Tôi là Chatbot Agri TraceChain. Bạn cần hỗ trợ gì?', false);
