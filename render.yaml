@@ -32,6 +32,6 @@ services:
       - key: GANACHE_URL
         fromService:
           type: web
-          name: ganache-service
+          name: ganache-nginx
           envVarKey: RENDER_EXTERNAL_URL
       # DATABASE_URL sẽ được add thủ công sau khi tạo database 
