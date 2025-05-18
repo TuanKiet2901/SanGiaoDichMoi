@@ -417,9 +417,9 @@ async function sendMessage() {
       body: JSON.stringify(body)
     });
 
-    // Kiểm tra nếu chưa đăng nhập
+    // Nếu chưa đăng nhập, KHÔNG redirect sang login, chỉ cho chat tiếp
     if (response.status === 401) {
-      window.location.href = '/auth/login';
+      addMessage('Bạn có thể chat mà không cần đăng nhập, nhưng lịch sử sẽ không được lưu.', false);
       return;
     }
 

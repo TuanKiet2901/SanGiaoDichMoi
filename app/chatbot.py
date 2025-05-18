@@ -421,21 +421,23 @@ def get_chat_history():
         })
 
 @chat_api.route('/api/chat', methods=['POST'])
-@login_required
 def chat():
     data = request.get_json()
     user_message = data.get('message', '').strip()
     if not user_message:
         return jsonify({'success': False, 'error': 'Tin nhắn không được để trống.'})
 
-    # Lưu tin nhắn của user vào database
-    user_history = ChatHistory(user_id=current_user.id, message=user_message, is_user=True)
-    db.session.add(user_history)
-    db.session.commit()
+    user_id = current_user.id if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated else None
+
+    # Lưu tin nhắn của user vào database NẾU đã đăng nhập
+    if user_id:
+        user_history = ChatHistory(user_id=user_id, message=user_message, is_user=True)
+        db.session.add(user_history)
+        db.session.commit()
 
     # GỌI LOGIC XỬ LÝ CÂU HỎI ĐÃ SETUP SẴN
     chatbot = Chatbot()
-    assistant_response = chatbot.get_response(user_message, current_user.id)
+    assistant_response = chatbot.get_response(user_message, user_id)
 
     # Nếu assistant_response là jsonify (tức là đã trả về đúng định dạng), thì lấy text để lưu vào db
     if hasattr(assistant_response, 'get_json'):
@@ -448,10 +450,11 @@ def chat():
     else:
         assistant_response_text = assistant_response
 
-    # Lưu tin nhắn của bot vào database
-    bot_history = ChatHistory(user_id=current_user.id, message=assistant_response_text, is_user=False)
-    db.session.add(bot_history)
-    db.session.commit()
+    # Lưu tin nhắn của bot vào database NẾU đã đăng nhập
+    if user_id:
+        bot_history = ChatHistory(user_id=user_id, message=assistant_response_text, is_user=False)
+        db.session.add(bot_history)
+        db.session.commit()
 
     # Trả về đúng định dạng cho frontend
     if hasattr(assistant_response, 'get_json'):
