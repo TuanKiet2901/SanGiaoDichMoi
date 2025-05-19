@@ -127,8 +127,47 @@ class Chatbot:
                 product_list = []
 
                 # Chuẩn hóa user input
-                user_input_norm = strip_accents(user_message)
+                user_input_norm = strip_accents(user_message).lower()
                 print("DEBUG: user_input_norm =", user_input_norm)
+
+                # 1. Sản phẩm giá cao nhất
+                if "gia cao nhat" in user_input_norm or "đắt nhất" in user_input_norm or "dat nhat" in user_input_norm:
+                    max_product = max(products, key=lambda p: p.price if p.price is not None else 0)
+                    response = f"Sản phẩm có giá cao nhất là {max_product.name} với giá {max_product.price:,.0f} đ."
+                    return jsonify({
+                        "type": "products",
+                        "response": response,
+                        "products": [{
+                            "id": max_product.id,
+                            "name": max_product.name,
+                            "price": float(max_product.price) if max_product.price is not None else None,
+                            "description": max_product.description,
+                            "image_url": max_product.image_url,
+                            "status": "Còn hàng" if max_product.get_available_quantity() > 0 else "Hết hàng",
+                            "available_quantity": max_product.get_available_quantity(),
+                            "category": max_product.category
+                        }]
+                    })
+
+                # 2. Sản phẩm giá thấp nhất
+                if "gia thap nhat" in user_input_norm or "rẻ nhất" in user_input_norm or "re nhat" in user_input_norm:
+                    # Lọc sản phẩm có giá > 0
+                    min_product = min((p for p in products if p.price is not None and p.price > 0), key=lambda p: p.price)
+                    response = f"Sản phẩm có giá thấp nhất là {min_product.name} với giá {min_product.price:,.0f} đ."
+                    return jsonify({
+                        "type": "products",
+                        "response": response,
+                        "products": [{
+                            "id": min_product.id,
+                            "name": min_product.name,
+                            "price": float(min_product.price) if min_product.price is not None else None,
+                            "description": min_product.description,
+                            "image_url": min_product.image_url,
+                            "status": "Còn hàng" if min_product.get_available_quantity() > 0 else "Hết hàng",
+                            "available_quantity": min_product.get_available_quantity(),
+                            "category": min_product.category
+                        }]
+                    })
 
                 # 1. Xử lý chào hỏi
                 if any(greet in user_input_norm for greet in ['xin-chao', 'hello']):
