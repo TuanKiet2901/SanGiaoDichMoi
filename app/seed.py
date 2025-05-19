@@ -17,7 +17,7 @@ def seed_users():
     # Tạo tài khoản người dùng thông thường
     user = User(
         name="Người Dùng",
-        email="phuphan@gmail.com",
+        email="buyer@gmail.com",
         password=generate_password_hash("123456789"),
         role="buyer",
         phone="0987654321",
