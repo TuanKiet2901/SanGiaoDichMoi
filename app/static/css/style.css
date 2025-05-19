@@ -283,6 +283,8 @@
   border-radius: 4px;
   border: none;
   padding: 8px;
+  color: #222;
+  background: #fff;
 }
 .chat-input button {
   background: #28a745;

@@ -49,6 +49,7 @@ class Chatbot:
         print("DEBUG - OPENAI_API_KEY:", os.getenv('OPENAI_API_KEY'))
         self.last_clear_time = datetime.now()
 
+
     def get_user_context(self, user_id):
         """Lấy context chat của user từ session"""
         if not user_id:

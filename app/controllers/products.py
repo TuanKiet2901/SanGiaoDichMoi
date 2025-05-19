@@ -274,17 +274,11 @@ def edit(id):
                           product=product)
 
 @products_bp.route('/<int:id>/delete', methods=['POST'])
+@login_required
 def delete(id):
-    # Check if user is logged in
-    if 'user_id' not in session:
-        flash('Vui lòng đăng nhập để xóa sản phẩm.', 'error')
-        return redirect(url_for('auth.login'))
-
-    # Get product by ID
     product = Product.query.get_or_404(id)
 
-    # Check if user is the owner of the product
-    if product.user_id != session['user_id']:
+    if product.user_id != current_user.id:
         flash('Bạn không có quyền xóa sản phẩm này.', 'error')
         return redirect(url_for('products.show', id=id))
 
@@ -295,7 +289,6 @@ def delete(id):
             flash('Không thể xóa sản phẩm vì có lô hàng liên kết.', 'error')
             return redirect(url_for('products.edit', id=id))
 
-        # Delete the product
         db.session.delete(product)
         db.session.commit()
         flash('Sản phẩm đã được xóa thành công!', 'success')

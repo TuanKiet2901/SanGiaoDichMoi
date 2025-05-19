@@ -74,7 +74,11 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             {% for product in products %}
             <div class="border rounded-lg overflow-hidden">
-                <div class="h-40 bg-gray-200"></div>
+                {% if product.image_url %}
+                  <img src="{{ product.image_url }}" alt="{{ product.name }}" class="h-40 w-full object-cover" />
+                {% else %}
+                  <div class="h-40 bg-gray-200 flex items-center justify-center text-gray-400">No Image</div>
+                {% endif %}
                 <div class="p-4">
                     <h3 class="font-bold">{{ product.name }}</h3>
                     <p class="text-gray-600 text-sm mb-2">{{ product.description | truncate(100) }}</p>
