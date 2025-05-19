@@ -127,94 +127,8 @@ class Chatbot:
                 product_list = []
 
                 # Chuẩn hóa user input
-                user_input_norm = strip_accents(user_message).lower()
+                user_input_norm = strip_accents(user_message)
                 print("DEBUG: user_input_norm =", user_input_norm)
-
-                # Xác định khoảng giá nếu có
-                price_min, price_max = None, None
-                range_match = re.search(r'tu\s*(\d+)[^\d]+den[^\d]+(\d+)', user_input_norm)
-                if range_match:
-                    price_min = int(range_match.group(1))
-                    price_max = int(range_match.group(2))
-                else:
-                    # trên
-                    above_match = re.search(r'tren[^\d]*(\d+)', user_input_norm)
-                    if above_match:
-                        price_min = int(above_match.group(1))
-                    # dưới
-                    below_match = re.search(r'duoi[^\d]*(\d+)', user_input_norm)
-                    if below_match:
-                        price_max = int(below_match.group(1))
-                    # giá ...
-                    price_match = re.search(r'gia[^\d]*(\d+)', user_input_norm)
-                    if price_match:
-                        price_max = int(price_match.group(1))
-
-                # 1. Sản phẩm giá cao nhất
-                if "gia cao nhat" in user_input_norm or "đắt nhất" in user_input_norm or "dat nhat" in user_input_norm:
-                    # Lọc sản phẩm theo khoảng giá nếu có
-                    filtered = []
-                    for p in products:
-                        if price_min and p.price < price_min:
-                            continue
-                        if price_max and p.price > price_max:
-                            continue
-                        filtered.append(p)
-                    if filtered:
-                        max_product = max(filtered, key=lambda p: p.price if p.price is not None else 0)
-                        response = f"Sản phẩm có giá cao nhất là {max_product.name} với giá {max_product.price:,.0f} đ."
-                        return jsonify({
-                            "type": "products",
-                            "response": response,
-                            "products": [{
-                                "id": max_product.id,
-                                "name": max_product.name,
-                                "price": float(max_product.price) if max_product.price is not None else None,
-                                "description": max_product.description,
-                                "image_url": max_product.image_url,
-                                "status": "Còn hàng" if max_product.get_available_quantity() > 0 else "Hết hàng",
-                                "available_quantity": max_product.get_available_quantity(),
-                                "category": max_product.category
-                            }]
-                        })
-                    else:
-                        return jsonify({
-                            "type": "text",
-                            "response": "Không tìm thấy sản phẩm phù hợp với yêu cầu giá."
-                        })
-
-                # 2. Sản phẩm giá thấp nhất
-                if "gia thap nhat" in user_input_norm or "rẻ nhất" in user_input_norm or "re nhat" in user_input_norm:
-                    # Lọc sản phẩm theo khoảng giá nếu có
-                    filtered = []
-                    for p in products:
-                        if price_min and p.price < price_min:
-                            continue
-                        if price_max and p.price > price_max:
-                            continue
-                        filtered.append(p)
-                    if filtered:
-                        min_product = min(filtered, key=lambda p: p.price if p.price is not None else float('inf'))
-                        response = f"Sản phẩm có giá thấp nhất là {min_product.name} với giá {min_product.price:,.0f} đ."
-                        return jsonify({
-                            "type": "products",
-                            "response": response,
-                            "products": [{
-                                "id": min_product.id,
-                                "name": min_product.name,
-                                "price": float(min_product.price) if min_product.price is not None else None,
-                                "description": min_product.description,
-                                "image_url": min_product.image_url,
-                                "status": "Còn hàng" if min_product.get_available_quantity() > 0 else "Hết hàng",
-                                "available_quantity": min_product.get_available_quantity(),
-                                "category": min_product.category
-                            }]
-                        })
-                    else:
-                        return jsonify({
-                            "type": "text",
-                            "response": "Không tìm thấy sản phẩm phù hợp với yêu cầu giá."
-                        })
 
                 # 1. Xử lý chào hỏi
                 if any(greet in user_input_norm for greet in ['xin-chao', 'hello']):
@@ -359,7 +273,7 @@ class Chatbot:
                             db.session.add(bot_history)
                             db.session.commit()
                         return jsonify({
-                            "type": "text+product",
+                            "type": "products",
                             "response": response,
                             "products": filtered,
                             "follow_up": f"Bạn có muốn tham khảo một số món từ sản phẩm {found_product.name} không? (Trả lời 'có' để xem gợi ý món ăn)"
@@ -425,7 +339,7 @@ class Chatbot:
                         db.session.add(bot_history)
                         db.session.commit()
                     return jsonify({
-                        "type": "text+product",
+                        "type": "products",
                         "response": "Các sản phẩm bạn có thể quan tâm là:",
                         "products": product_list
                     })
