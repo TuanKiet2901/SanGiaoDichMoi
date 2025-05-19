@@ -396,7 +396,8 @@ chat_api = Blueprint('chat_api', __name__)
 def get_chat_history():
     try:
         user_id = current_user.id
-        history = ChatHistory.query.filter_by(user_id=user_id).order_by(ChatHistory.created_at.asc()).limit(50).all()
+        history = ChatHistory.query.filter_by(user_id=user_id).order_by(ChatHistory.created_at.desc()).limit(50).all()
+        history = list(reversed(history))  # Để hiển thị từ cũ đến mới
         result = []
         for msg in history:
             if msg.type == "products":
