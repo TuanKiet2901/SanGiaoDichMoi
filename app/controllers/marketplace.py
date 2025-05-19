@@ -347,7 +347,7 @@ def order_detail(id):
     order = Order.query.get_or_404(id)
 
     # Kiểm tra quyền truy cập
-    if order.buyer_id != current_user.id and not current_user.is_admin:
+    if order.buyer_id != current_user.id and current_user.role != 'admin':
         flash('Bạn không có quyền xem đơn hàng này.', 'error')
         return redirect(url_for('marketplace.orders'))
 
