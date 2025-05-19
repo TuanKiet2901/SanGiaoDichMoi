@@ -345,14 +345,35 @@ def orders():
 def order_detail(id):
     # Lấy thông tin đơn hàng
     order = Order.query.get_or_404(id)
-
-    # Kiểm tra quyền truy cập
-    if order.buyer_id != current_user.id and current_user.role != 'admin':
-        flash('Bạn không có quyền xem đơn hàng này.', 'error')
-        return redirect(url_for('marketplace.orders'))
+    
+    # Log thông tin để debug
+    current_app.logger.info(f"Order detail - Order ID: {id}")
+    current_app.logger.info(f"Current user ID: {current_user.id}, Role: {current_user.role}")
+    current_app.logger.info(f"Order buyer ID: {order.buyer_id}")
 
     # Lấy các sản phẩm trong đơn hàng
     order_items = OrderItem.query.filter_by(order_id=id).all()
+
+    # Kiểm tra quyền truy cập
+    allowed = False
+    if order.buyer_id == current_user.id or current_user.role == 'admin':
+        allowed = True
+    elif current_user.role == 'farmer':
+        # Kiểm tra nếu farmer là người bán bất kỳ sản phẩm nào trong đơn hàng
+        for item in order_items:
+            product = Product.query.get(item.product_id)
+            if product and product.user_id == current_user.id:
+                allowed = True
+                break
+    if not allowed:
+        current_app.logger.warning(f"Access denied - User {current_user.id} tried to access order {id}")
+        flash('Bạn không có quyền xem đơn hàng này.', 'error')
+        return redirect(url_for('marketplace.orders'))
+
+    for item in order_items:
+        item.product = Product.query.get(item.product_id)
+        if item.batch_id:
+            item.batch = Batch.query.get(item.batch_id)
 
     # Thông tin thanh toán
     payment = Payment.query.filter_by(order_id=id).first()
@@ -360,11 +381,6 @@ def order_detail(id):
         current_app.logger.info(f"payment order id: {id}, transaction_id: {payment.status}")
     else:
         current_app.logger.info(f"No payment found for order id: {id}")
-
-    for item in order_items:
-        item.product = Product.query.get(item.product_id)
-        if item.batch_id:
-            item.batch = Batch.query.get(item.batch_id)
 
     return render_template('marketplace/order_detail.html',
                           title=f'Đơn hàng #{id}',
