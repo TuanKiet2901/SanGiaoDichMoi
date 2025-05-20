@@ -297,6 +297,144 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    fetch('/locations/provinces')
+        .then(response => response.json())
+        .then(provinces => {
+            const provinceSelect = document.getElementById('province');
+            provinces.forEach(province => {
+                const option = new Option(province.name, province.code);
+                provinceSelect.add(option);
+            });
+            // Khởi tạo Choices.js sau khi đã add option
+            new Choices(provinceSelect, {
+                searchEnabled: true,
+                itemSelectText: '',
+                shouldSort: false,
+                placeholder: true,
+                searchPlaceholderValue: 'Tìm kiếm...'
+            });
+        });
+
+    // Xử lý khi chọn tỉnh/thành phố
+    const provinceSelect = document.getElementById('province');
+    if (provinceSelect) {
+        provinceSelect.addEventListener('change', function() {
+            const provinceCode = this.value;
+            const districtSelect = document.getElementById('district');
+            const wardSelect = document.getElementById('ward');
+            const hamletSelect = document.getElementById('hamlet');
+
+            // Reset dependent selects
+            districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
+            wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+            hamletSelect.innerHTML = '<option value="">Chọn ấp/thôn (nếu có)</option>';
+
+            if (districtSelect.choicesInstance) {
+                districtSelect.choicesInstance.destroy();
+            }
+            if (wardSelect.choicesInstance) {
+                wardSelect.choicesInstance.destroy();
+            }
+            if (hamletSelect.choicesInstance) {
+                hamletSelect.choicesInstance.destroy();
+            }
+
+            if (provinceCode) {
+                fetch(`/locations/districts/${provinceCode}`)
+                    .then(response => response.json())
+                    .then(districts => {
+                        districts.forEach(district => {
+                            const option = new Option(district.name, district.code);
+                            districtSelect.add(option);
+                        });
+                        // Khởi tạo Choices.js cho district
+                        districtSelect.choicesInstance = new Choices(districtSelect, {
+                            searchEnabled: true,
+                            itemSelectText: '',
+                            shouldSort: false,
+                            placeholder: true,
+                            searchPlaceholderValue: 'Tìm kiếm...'
+                        });
+                    });
+            }
+        });
+    }
+
+    // Xử lý khi chọn quận/huyện
+    const districtSelect = document.getElementById('district');
+    if (districtSelect) {
+        districtSelect.addEventListener('change', function() {
+            const districtCode = this.value;
+            const wardSelect = document.getElementById('ward');
+            const hamletSelect = document.getElementById('hamlet');
+
+            // Reset dependent selects
+            wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+            hamletSelect.innerHTML = '<option value="">Chọn ấp/thôn (nếu có)</option>';
+
+            if (wardSelect.choicesInstance) {
+                wardSelect.choicesInstance.destroy();
+            }
+            if (hamletSelect.choicesInstance) {
+                hamletSelect.choicesInstance.destroy();
+            }
+
+            if (districtCode) {
+                fetch(`/locations/wards/${districtCode}`)
+                    .then(response => response.json())
+                    .then(wards => {
+                        wards.forEach(ward => {
+                            const option = new Option(ward.name, ward.code);
+                            wardSelect.add(option);
+                        });
+                        // Khởi tạo Choices.js cho ward
+                        wardSelect.choicesInstance = new Choices(wardSelect, {
+                            searchEnabled: true,
+                            itemSelectText: '',
+                            shouldSort: false,
+                            placeholder: true,
+                            searchPlaceholderValue: 'Tìm kiếm...'
+                        });
+                    });
+            }
+        });
+    }
+
+    // Xử lý khi chọn phường/xã
+    const wardSelect = document.getElementById('ward');
+    if (wardSelect) {
+        wardSelect.addEventListener('change', function() {
+            const wardCode = this.value;
+            const hamletSelect = document.getElementById('hamlet');
+
+            // Reset hamlet select
+            hamletSelect.innerHTML = '<option value="">Chọn ấp/thôn (nếu có)</option>';
+
+            if (hamletSelect.choicesInstance) {
+                hamletSelect.choicesInstance.destroy();
+            }
+
+            if (wardCode) {
+                fetch(`/locations/hamlets/${wardCode}`)
+                    .then(response => response.json())
+                    .then(hamlets => {
+                        hamlets.forEach(hamlet => {
+                            const option = new Option(hamlet.name, hamlet.code);
+                            hamletSelect.add(option);
+                        });
+                        // Khởi tạo Choices.js cho hamlet
+                        hamletSelect.choicesInstance = new Choices(hamletSelect, {
+                            searchEnabled: true,
+                            itemSelectText: '',
+                            shouldSort: false,
+                            placeholder: true,
+                            searchPlaceholderValue: 'Tìm kiếm...'
+                        });
+                    });
+            }
+        });
+    }
 });
 
 // ==== Chatbot Floating Widget Functions ====
@@ -524,3 +662,38 @@ function addToCartFromChat(productId) {
     showAlert('Có lỗi xảy ra khi thêm vào giỏ hàng.', 'error');
   });
 }
+
+// === TỰ ĐỘNG GHÉP ĐỊA ĐIỂM KHI CHỌN ===
+function updateLocationField() {
+    const province = document.getElementById('province');
+    const district = document.getElementById('district');
+    const ward = document.getElementById('ward');
+    const hamlet = document.getElementById('hamlet');
+    let location = '';
+
+    if (hamlet && hamlet.value) {
+        location = `${hamlet.options[hamlet.selectedIndex].text}, `;
+    }
+    if (ward && ward.value) {
+        location += `${ward.options[ward.selectedIndex].text}, `;
+    }
+    if (district && district.value) {
+        location += `${district.options[district.selectedIndex].text}, `;
+    }
+    if (province && province.value) {
+        location += `${province.options[province.selectedIndex].text}`;
+    }
+    document.getElementById('location').value = location.replace(/, $/, '');
+}
+
+// Gắn sự kiện cho các dropdown địa điểm nếu tồn tại trên trang
+window.addEventListener('DOMContentLoaded', function() {
+    const province = document.getElementById('province');
+    const district = document.getElementById('district');
+    const ward = document.getElementById('ward');
+    const hamlet = document.getElementById('hamlet');
+    if (province) province.addEventListener('change', updateLocationField);
+    if (district) district.addEventListener('change', updateLocationField);
+    if (ward) ward.addEventListener('change', updateLocationField);
+    if (hamlet) hamlet.addEventListener('change', updateLocationField);
+});

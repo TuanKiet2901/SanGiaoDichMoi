@@ -11,6 +11,7 @@ from app.models.batch import Batch
 from app.models.product import Product
 from app.models.user import User
 from app.models.supply_chain_step import SupplyChainStep
+import json
 
 batches_bp = Blueprint('batches', __name__)
 
@@ -95,13 +96,23 @@ def create():
         harvest_date = request.form.get('harvest_date')
         expiry_date = request.form.get('expiry_date')
         quantity = int(request.form.get('quantity'))
-        location = request.form.get('location')
+        location_data = json.loads(request.form.get('location'))
         status = request.form.get('status')
 
         # Validate required fields
-        if not product_id or not harvest_date or not quantity or not location or not status:
+        if not product_id or not harvest_date or not quantity or not location_data or not status:
             flash('Vui lòng điền đầy đủ thông tin.', 'error')
             return redirect(url_for('batches.create'))
+
+        # Format location string
+        location_parts = [
+            location_data['address'],
+            location_data['hamlet'] if location_data['hamlet'] else '',
+            location_data['ward'],
+            location_data['district'],
+            location_data['province']
+        ]
+        location = ', '.join(filter(None, location_parts))
 
         # Check if product belongs to the farmer
         product = Product.query.get(product_id)

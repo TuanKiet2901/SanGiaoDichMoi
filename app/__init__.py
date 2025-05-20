@@ -85,6 +85,7 @@ def create_app():
     from app.controllers.payment import payment_bp
     from app.controllers.reviews import reviews_bp
     from app.chatbot import chat_api  # Sửa import chat_api
+    from app.controllers.locations import locations_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -96,6 +97,7 @@ def create_app():
     app.register_blueprint(payment_bp, url_prefix='/payment')
     app.register_blueprint(reviews_bp, url_prefix='/reviews')
     app.register_blueprint(chat_api, url_prefix='/chat')  # Sửa đăng ký chat_api
+    app.register_blueprint(locations_bp, url_prefix='/locations')
     csrf.exempt(chat_api)
 
     # Tạo thư mục uploads nếu chưa tồn tại

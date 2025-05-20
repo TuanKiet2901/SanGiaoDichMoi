@@ -45,12 +45,6 @@
                 </div>
                 
                 <div class="mb-4">
-                    <label for="location" class="block text-gray-700 font-medium mb-2">Địa điểm <span class="text-red-500">*</span></label>
-                    <input type="text" id="location" name="location" required
-                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
-                </div>
-                
-                <div class="mb-4">
                     <label for="status" class="block text-gray-700 font-medium mb-2">Trạng thái <span class="text-red-500">*</span></label>
                     <select id="status" name="status" required
                             class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
@@ -59,6 +53,48 @@
                         <option value="shipping">Vận chuyển</option>
                         <option value="delivered">Đã giao</option>
                     </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Location fields -->
+        <div class="mb-6 p-4 bg-gray-50 rounded-lg shadow-inner">
+            <h2 class="text-lg font-semibold text-green-700 mb-4 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                Địa điểm sản xuất
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="province" class="block text-gray-700 font-medium mb-1">Tỉnh/Thành phố <span class="text-red-500">*</span></label>
+                    <select class="form-control w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" id="province" name="province" required>
+                        <option value="">Chọn tỉnh/thành phố</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="district" class="block text-gray-700 font-medium mb-1">Quận/Huyện <span class="text-red-500">*</span></label>
+                    <select class="form-control w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" id="district" name="district" required>
+                        <option value="">Chọn quận/huyện</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="ward" class="block text-gray-700 font-medium mb-1">Phường/Xã <span class="text-red-500">*</span></label>
+                    <select class="form-control w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" id="ward" name="ward" required>
+                        <option value="">Chọn phường/xã</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="hamlet" class="block text-gray-700 font-medium mb-1">Ấp/Thôn</label>
+                    <select class="form-control w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" id="hamlet" name="hamlet">
+                        <option value="">Chọn ấp/thôn (nếu có)</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="address" class="block text-gray-700 font-medium mb-1">Địa chỉ chi tiết</label>
+                    <input type="text" class="form-control w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" id="address" name="address">
+                </div>
+                <div class="md:col-span-2">
+                    <label for="location" class="block text-gray-700 font-medium mb-1">Địa điểm tổng hợp</label>
+                    <input type="text" class="form-control w-full px-3 py-2 border rounded-lg bg-gray-100" id="location" name="location" readonly required>
                 </div>
             </div>
         </div>
@@ -73,4 +109,111 @@
         </div>
     </form>
 </div>
+
+<!-- Choices.js CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+<!-- Choices.js JS -->
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load provinces on page load
+    fetch('/locations/provinces')
+        .then(response => response.json())
+        .then(provinces => {
+            const provinceSelect = document.getElementById('province');
+            provinces.forEach(province => {
+                const option = new Option(province.name, province.code);
+                provinceSelect.add(option);
+            });
+        });
+
+    // Handle province change
+    document.getElementById('province').addEventListener('change', function() {
+        const provinceCode = this.value;
+        const districtSelect = document.getElementById('district');
+        const wardSelect = document.getElementById('ward');
+        const hamletSelect = document.getElementById('hamlet');
+
+        // Reset dependent selects
+        districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
+        wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+        hamletSelect.innerHTML = '<option value="">Chọn ấp/thôn (nếu có)</option>';
+
+        if (provinceCode) {
+            fetch(`/locations/districts/${provinceCode}`)
+                .then(response => response.json())
+                .then(districts => {
+                    districts.forEach(district => {
+                        const option = new Option(district.name, district.code);
+                        districtSelect.add(option);
+                    });
+                });
+        }
+    });
+
+    // Handle district change
+    document.getElementById('district').addEventListener('change', function() {
+        const districtCode = this.value;
+        const wardSelect = document.getElementById('ward');
+        const hamletSelect = document.getElementById('hamlet');
+
+        // Reset dependent selects
+        wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+        hamletSelect.innerHTML = '<option value="">Chọn ấp/thôn (nếu có)</option>';
+
+        if (districtCode) {
+            fetch(`/locations/wards/${districtCode}`)
+                .then(response => response.json())
+                .then(wards => {
+                    wards.forEach(ward => {
+                        const option = new Option(ward.name, ward.code);
+                        wardSelect.add(option);
+                    });
+                });
+        }
+    });
+
+    // Handle ward change
+    document.getElementById('ward').addEventListener('change', function() {
+        const wardCode = this.value;
+        const hamletSelect = document.getElementById('hamlet');
+
+        // Reset hamlet select
+        hamletSelect.innerHTML = '<option value="">Chọn ấp/thôn (nếu có)</option>';
+
+        if (wardCode) {
+            fetch(`/locations/hamlets/${wardCode}`)
+                .then(response => response.json())
+                .then(hamlets => {
+                    hamlets.forEach(hamlet => {
+                        const option = new Option(hamlet.name, hamlet.code);
+                        hamletSelect.add(option);
+                    });
+                });
+        }
+    });
+
+    // Update hidden location field before form submission
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const province = document.getElementById('province');
+        const district = document.getElementById('district');
+        const ward = document.getElementById('ward');
+        const hamlet = document.getElementById('hamlet');
+        const address = document.getElementById('address');
+
+        const location = {
+            province: province.options[province.selectedIndex].text,
+            district: district.options[district.selectedIndex].text,
+            ward: ward.options[ward.selectedIndex].text,
+            hamlet: hamlet.value ? hamlet.options[hamlet.selectedIndex].text : '',
+            address: address.value
+        };
+
+        document.getElementById('location').value = JSON.stringify(location);
+    });
+});
+</script>
+{% endblock %}
 {% endblock %}
